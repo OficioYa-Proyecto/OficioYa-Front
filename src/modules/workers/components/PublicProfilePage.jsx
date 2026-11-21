@@ -61,8 +61,8 @@ function PublicProfilePage() {
           </div>
         </div>
         <div className={styles.profileHeaderSide}>
-          <span>Desde</span>
-          <strong>{formatMoney(primaryTrade.approxRate)}</strong>
+          <span>Desde</span>{' '}
+          <strong>{formatMoney(primaryTrade.approxRate)}</strong>{' '}
           <small>{unitName(primaryTrade.rateUnit)}</small>
         </div>
       </section>

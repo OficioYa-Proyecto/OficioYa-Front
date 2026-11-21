@@ -3,30 +3,24 @@ import StatusMessage from './ui/StatusMessage';
 import Toggle from './ui/Toggle';
 import ui from './ui/ui.module.css';
 import { useMyWorker } from '../hooks/useMyWorker';
-import { updateAvailableNow } from '../services/workersService';
 import ProfileStatus from './ProfileStatus';
 import PageHeading from './PageHeading';
 import ScheduleEditor from './ScheduleEditor';
 import styles from './worker.module.css';
 
 function AvailabilityPage() {
-  const { data: profile, loading, error, refresh } = useMyWorker();
+  const { data: profile, loading, error, refresh, toggleAvailableNow } = useMyWorker();
   const [toggleError, setToggleError] = useState('');
-  const [cambiando, setCambiando] = useState(false);
   if (!profile) return <ProfileStatus error={error} loading={loading} />;
 
   const locked = profile.status === 'PAUSED';
 
   const switchAvailableNow = async () => {
     setToggleError('');
-    setCambiando(true);
     try {
-      await updateAvailableNow(profile.id, !profile.availableNow);
-      await refresh();
+      await toggleAvailableNow();
     } catch (e) {
       setToggleError(e.message);
-    } finally {
-      setCambiando(false);
     }
   };
 
@@ -50,7 +44,7 @@ function AvailabilityPage() {
           </div>
           <Toggle
             checked={profile.availableNow}
-            disabled={cambiando}
+            disabled={locked}
             label={profile.availableNow ? 'Disponible' : 'No disponible'}
             onChange={switchAvailableNow}
           />
