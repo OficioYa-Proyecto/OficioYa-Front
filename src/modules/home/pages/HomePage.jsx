@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getSession, saveSession } from '../../core/lib/session';
 import * as profileService from '../../users/services/profileService';
+import { useMyWorker } from '../../workers/hooks/useMyWorker';
 import styles from './HomePage.module.css';
 
 /* ─── SVG Icons ─── */
@@ -137,12 +138,14 @@ function getFirstName(fullName, fallback = 'Usuario') {
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const session = getSession();
   const [roles, setRoles] = useState(() => normalizeRoles(session?.roles));
   const [profileName, setProfileName] = useState(() => localStorage.getItem('oy_userName') || '');
   const [addingRole, setAddingRole] = useState(false);
   const [howItWorksTab, setHowItWorksTab] = useState('contratar');
-  const [isAvailableNow, setIsAvailableNow] = useState(true);
+  const { data: workerProfile, toggleAvailableNow } = useMyWorker();
+  const isAvailableNow = Boolean(workerProfile?.availableNow);
 
   useEffect(() => {
     let active = true;
@@ -506,7 +509,11 @@ export default function HomePage() {
                 </Link>
 
                 <div className={styles.innerActionRowStatic}>
-                  <div className={styles.innerActionLeft}>
+                  <Link
+                    to="/worker/availability"
+                    className={styles.innerActionLeft}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
                     <div className={styles.innerActionIconBoxBlue}>
                       <ClockIcon />
                     </div>
@@ -516,13 +523,20 @@ export default function HomePage() {
                         Dile a la gente cuándo puedes trabajar.
                       </p>
                     </div>
-                  </div>
+                  </Link>
                   <div className={styles.switchCol}>
                     <button
                       type="button"
                       role="switch"
                       aria-checked={isAvailableNow}
-                      onClick={() => setIsAvailableNow(!isAvailableNow)}
+                      disabled={workerProfile?.status === 'PAUSED'}
+                      onClick={() => {
+                        if (!workerProfile?.id) {
+                          navigate('/worker/create');
+                          return;
+                        }
+                        toggleAvailableNow().catch(() => {});
+                      }}
                       className={`${styles.toggleSwitch} ${isAvailableNow ? styles.toggleSwitchActive : ''}`}
                     >
                       <span className={styles.toggleThumb} />

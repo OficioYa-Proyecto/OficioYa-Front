@@ -7,7 +7,6 @@ import ui from './ui/ui.module.css';
 import { useAccount } from '../hooks/useAccount';
 import { useZones } from '../hooks/useCatalogs';
 import { useMyWorker } from '../hooks/useMyWorker';
-import { updateAvailableNow } from '../services/workersService';
 import { DAYS, formatMoney, formatDate, dayName, unitName } from './formats';
 import PageHeading from './PageHeading';
 import ProfileStatus from './ProfileStatus';
@@ -16,7 +15,7 @@ import styles from './worker.module.css';
 const DAY_ORDER = DAYS.map((day) => day.value);
 
 function DashboardPage() {
-  const { data: profile, loading, error, refresh } = useMyWorker();
+  const { data: profile, loading, error, toggleAvailableNow } = useMyWorker();
   const { data: zones } = useZones();
   const account = useAccount('/users/me');
   const [actionError, setActionError] = useState('');
@@ -40,8 +39,7 @@ function DashboardPage() {
   const toggleNow = async () => {
     setActionError('');
     try {
-      await updateAvailableNow(profile.id, !profile.availableNow);
-      await refresh();
+      await toggleAvailableNow();
     } catch (e) {
       setActionError(e.message);
     }
