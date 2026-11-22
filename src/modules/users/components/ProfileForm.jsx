@@ -413,7 +413,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
             {/* RF-14. Una localidad; no se puede dejar vacía una vez elegida (no aplica para administradores) */}
             {!esAdmin && (
                 <div className={styles.field}>
-                  <label htmlFor="localityId" className={reg.label}>Zona de cobertura</label>
+                  <label htmlFor="localityId" className={reg.label}>Tu localidad</label>
                   <select
                       id="localityId"
                       className={reg.select}
