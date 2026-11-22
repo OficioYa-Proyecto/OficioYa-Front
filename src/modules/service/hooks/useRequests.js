@@ -1,24 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { requestsService } from '../services/requestsService';
 
-// Carga las solicitudes del usuario y expone las acciones sobre ellas.
+// Carga las solicitudes del usuario según su rol y expone las acciones sobre ellas.
+// role: 'TRABAJADOR' | 'CONTRATANTE'
 // action: 'accept' | 'reject' | 'complete' | 'acceptConflict' | 'cancel' | 'remove'
-export function useRequests(token) {
+export function useRequests(role) {
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(Boolean(token));
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!token) {
-      return undefined;
-    }
     let cancelled = false;
     requestsService
-      .listMine(token)
+      .listMine(role)
       .then((data) => {
         if (!cancelled) {
-          setRequests(data);
+          setRequests(Array.isArray(data) ? data : []);
           setError('');
         }
       })
@@ -35,7 +33,7 @@ export function useRequests(token) {
     return () => {
       cancelled = true;
     };
-  }, [token, reloadKey]);
+  }, [role, reloadKey]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -43,13 +41,13 @@ export function useRequests(token) {
     async (action, id) => {
       setError('');
       try {
-        await requestsService[action](id, token);
+        await requestsService[action](id);
         reload();
       } catch (e) {
         setError(e.message);
       }
     },
-    [token, reload],
+    [reload],
   );
 
   return { requests, loading, error, reload, act };

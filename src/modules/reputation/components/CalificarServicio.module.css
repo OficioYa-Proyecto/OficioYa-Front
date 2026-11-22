@@ -1,0 +1,13 @@
+.calificado {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #e4f4ec;
+  color: #1f6b47;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.enlace {
+  color: #dc623f;
+  font-weight: 700;
+}

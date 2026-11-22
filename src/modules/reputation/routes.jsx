@@ -7,7 +7,7 @@ export const routes = [
   {
     path: '/mis-servicios',
     element: (
-      <RequiereRol roles={['CONTRATANTE', 'TRABAJADOR']}>
+      <RequiereRol roles={['TRABAJADOR']}>
         <MisServiciosPage />
       </RequiereRol>
     ),
@@ -31,6 +31,6 @@ export const routes = [
 ];
 
 export const navLinks = [
-  { label: 'Mis Servicios', to: '/mis-servicios', roles: ['CONTRATANTE', 'TRABAJADOR'] },
+  { label: 'Mis Servicios', to: '/mis-servicios', roles: ['TRABAJADOR'] },
   { label: 'Moderación', to: '/admin/moderacion', roles: ['ADMIN'] },
 ];

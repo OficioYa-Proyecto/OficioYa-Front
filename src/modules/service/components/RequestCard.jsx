@@ -56,7 +56,7 @@ function Icon({ children }) {
 
 // Tarjeta de una solicitud: mismo lenguaje visual que las notificaciones del mockup
 // (título, fecha, hora y ubicación con íconos, y el estado como etiqueta).
-function RequestCard({ request, actions, onAction }) {
+function RequestCard({ request, actions, onAction, extra = null }) {
   const meta = STATE_META[request.state] ?? { label: request.state, tone: 'muted' };
   const { date, time } = splitSchedule(request.scheduledDateTime);
 
@@ -100,7 +100,7 @@ function RequestCard({ request, actions, onAction }) {
         </div>
       </dl>
 
-      {actions.length > 0 && (
+      {(actions.length > 0 || extra) && (
         <div className={styles.actions}>
           {actions.map((action) => (
             <Button
@@ -111,6 +111,7 @@ function RequestCard({ request, actions, onAction }) {
               {action.label}
             </Button>
           ))}
+          {extra}
         </div>
       )}
     </article>

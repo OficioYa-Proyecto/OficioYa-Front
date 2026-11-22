@@ -1,5 +1,4 @@
 import { request } from '../../core/lib/httpClient';
-import { tokenStorage } from '../../service/services/tokenStorage';
 
 const NAME_PENDING = 'Trabajador';
 
@@ -36,8 +35,8 @@ export const workersService = {
   // GET /workers del servicio de Workers. Aún no filtra por barrio, fecha ni hora:
   // ese servicio solo filtra por tradeId, zoneId, maxRate y availableNow.
   search: async () => {
-    const token = tokenStorage.get();
-    const workers = await request('/workers', token ? { token } : undefined);
+    // httpClient ya agrega el token de la sesión.
+    const workers = await request('/workers');
     return (workers ?? []).filter((w) => w.userId).map(toWorker);
   },
 };
