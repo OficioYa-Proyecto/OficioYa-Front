@@ -628,9 +628,9 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* RF-14. Zona de cobertura opcional; se puede cambiar después en Editar perfil */}
+              {/* RF-14. Localidad opcional; se puede cambiar después en Editar perfil */}
               <div className={`${styles.formGroup} ${styles.gridFull}`}>
-                <label className={styles.label} htmlFor="localityId">Zona de cobertura</label>
+                <label className={styles.label} htmlFor="localityId">Tu localidad</label>
                 <select id="localityId" className={styles.select} value={localityId} onChange={(e) => setLocalityId(e.target.value)}>
                   <option value="">Selecciona una localidad</option>
                   {localidades.map((localidad) => (

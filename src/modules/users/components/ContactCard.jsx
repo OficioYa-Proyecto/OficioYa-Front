@@ -17,7 +17,7 @@ function ContactCard({ email, phones, birthDate, edad, localidad, nota }) {
             valores: alternos,
         },
         edad != null && { key: 'edad', icon: 'calendar', etiqueta: 'Edad', valores: [`${edad} años`] },
-        localidad && { key: 'localidad', icon: 'pin', etiqueta: 'Zona de cobertura', valores: [localidad] },
+        localidad && { key: 'localidad', icon: 'pin', etiqueta: 'Localidad', valores: [localidad] },
         birthDate && { key: 'birthDate', icon: 'calendar', etiqueta: 'Fecha de nacimiento', valores: [formatBirthDate(birthDate)] },
     ].filter(Boolean);
 
