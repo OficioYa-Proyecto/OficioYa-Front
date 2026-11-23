@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import Button from '../../core/design-system/Button';
 import { DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import { useZones } from '../hooks/useZones';
 import {
   EMPTY_FORM,
   composeAddress,
@@ -12,18 +14,17 @@ import { CalendarIcon, ClockIcon, MapPinIcon } from './icons';
 import PhotoPicker from './PhotoPicker';
 import styles from './RequestDetailsStep.module.css';
 
-const NEIGHBORHOODS = [
-  'Laureles',
-  'El Poblado',
-  'Envigado',
-  'Sabaneta',
-  'Bello',
-  'Itagüí',
-  'Robledo',
-  'Belén',
-  'Manrique',
-  'Aranjuez',
-];
+function groupByLocality(zones) {
+  const groups = new Map();
+  for (const zone of zones) {
+    const key = zone.locality || 'Otros';
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(zone);
+  }
+  return Array.from(groups, ([locality, items]) => ({ locality, items }));
+}
 
 function fieldProps(id, error, { required = false, hint = false } = {}) {
   const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null]
@@ -138,6 +139,8 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
   const [submitted, setSubmitted] = useState(false);
   const errors = validateDetails(values);
   const visible = submitted ? errors : {};
+  const zones = useZones();
+  const groups = groupByLocality(zones.items);
 
   const bind = (name) => ({
     value: values[name],
@@ -186,16 +189,33 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
           >
             <select
               {...fieldProps('field-neighborhood', visible.neighborhood, { required: true })}
-              {...bind('neighborhood')}
+              value={values.neighborhood}
+              onChange={(event) => {
+                const name = event.target.value;
+                const zone = zones.items.find((item) => item.name === name);
+                onChange({ neighborhood: name, neighborhoodId: zone ? zone.id : '' });
+              }}
             >
-              <option value="">Selecciona</option>
-              {NEIGHBORHOODS.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
+              <option value="">{zones.status === 'loading' ? 'Cargando barrios' : 'Selecciona'}</option>
+              {groups.map((group) => (
+                <optgroup key={group.locality} label={group.locality}>
+                  {group.items.map((zone) => (
+                    <option key={zone.id} value={zone.name}>
+                      {zone.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </Field>
+          {zones.status === 'error' && (
+            <div className={styles.hint} role="alert">
+              <p>No pudimos cargar los barrios.</p>
+              <Button type="button" variant="secondary" onClick={zones.retry}>
+                Reintentar
+              </Button>
+            </div>
+          )}
 
           <Field
             id="field-exactAddress"

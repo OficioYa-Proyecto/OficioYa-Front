@@ -2,6 +2,7 @@ export const EMPTY_FORM = {
   description: '',
   photos: [],
   neighborhood: '',
+  neighborhoodId: '',
   address: { roadType: '', main: '', cross: '', number: '' },
   exactAddress: '',
   date: '',
