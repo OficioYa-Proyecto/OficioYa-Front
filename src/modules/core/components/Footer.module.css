@@ -1,0 +1,68 @@
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  background: var(--color-text);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* Cápsula blanca redondeada que enmarca el logo */
+.logoWrap {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.logoWrap:hover {
+  transform: scale(1.03);
+}
+
+.logo {
+  height: 56px;
+  display: block;
+  object-fit: contain;
+}
+
+.tagline {
+  color: var(--color-surface-alt);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+.copy {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@media (max-width: 680px) {
+  .footer {
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px 16px;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .logo {
+    height: 48px;
+  }
+
+  .tagline {
+    flex: none;
+  }
+}

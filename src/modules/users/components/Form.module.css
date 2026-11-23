@@ -1,0 +1,458 @@
+.page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.profileHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #d3e4dc;
+  color: #214e3f;
+  font-weight: 800;
+  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #e4dcd0;
+}
+
+.profileAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photoUploadBox {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+}
+
+.photoUploadActions {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.form {
+  display: grid;
+  gap: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  display: block;
+  font-weight: 700;
+}
+
+.required {
+  color: var(--color-danger);
+  margin-left: 4px;
+}
+
+.note {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Etiqueta a la izquierda y contador de caracteres a la derecha, sobre el campo */
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.counter {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.fieldError {
+  font-size: 0.85rem;
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.invite {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+}
+
+.invite h3 {
+  margin: 0;
+}
+
+/* Misma altura en modo lectura y en modo edición: no hay salto al pulsar "Modificar" */
+.phoneRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 60px;
+  padding: 0 7px 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.phoneRow input {
+  flex: 1;
+  margin-left: -9px;
+}
+
+/* Versión más baja para la edición de teléfonos */
+.compact input,
+.compact button {
+  height: 44px;
+  padding: 0 14px;
+}
+
+.fieldFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fieldFooter > button {
+  margin-top: 10px;
+}
+
+/* Opción de ser trabajador: tarjeta seleccionable */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.check:hover {
+  border-color: var(--color-primary);
+}
+
+.check input {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.check strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+
+.checkActivo {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+/* Pantalla de registro exitoso */
+.success {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+  text-align: center;
+}
+
+.success h1 {
+  margin: 0;
+}
+
+.success .note {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.successIcon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Botones a ambos extremos (Cancelar a la izquierda, Guardar a la derecha) */
+.between {
+  justify-content: space-between;
+}
+
+/* Campo de solo lectura, como el correo en la edición del perfil */
+.form input:disabled,
+.form textarea:disabled {
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+  cursor: not-allowed;
+}
+/* Datos sensibles (correo y nacimiento) en dos columnas */
+.datosSensibles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .datosSensibles {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dato dt {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.dato dd {
+  margin: 0;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* Separador de los botones más cerca del último teléfono */
+.form .footerCompacto {
+  margin-top: 0;
+}
+
+/* "Campos obligatorios" justo debajo del título.
+   Todos los títulos del formulario con el mismo tamaño */
+.encabezado h2 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+}
+
+/* RF-13. Sobre mi cuenta: título fuera; la tarjeta lleva el borde rojo y cada opción va en su propio recuadro neutro */
+.cuenta {
+  display: grid;
+  gap: 20px;
+  margin-top: 2rem;
+}
+
+/* Igual que .brandHighlight del título "Editar perfil", pero en rojo */
+.resaltadoPeligro {
+  color: var(--color-danger);
+  background: linear-gradient(transparent 75%, color-mix(in srgb, var(--color-danger) 18%, transparent) 75%);
+  padding: 0 4px;
+  border-radius: 6px;
+}
+
+.cuenta .cuentaLista {
+  display: grid;
+  gap: 16px;
+  border-color: var(--color-danger);
+}
+
+/* Mismo espacio arriba y abajo dentro de la tarjeta (la tarjeta trae 36px arriba y 40px abajo) */
+.cuenta .cuentaLista {
+  padding-bottom: 36px;
+}
+
+@media (max-width: 640px) {
+  .cuenta .cuentaLista {
+    padding-bottom: 24px;
+  }
+}
+
+/* Error: mismo espacio arriba (16px del gap + 20px) que abajo (36px de la tarjeta)
+   y alineado con el texto de las opciones (mismo padding lateral que .cuentaFila) */
+.cuentaError {
+  margin-top: 20px;
+  padding: 0 1.5rem;
+}
+
+.cuentaError p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .cuentaError {
+    margin-top: 8px;
+  }
+}
+
+.cuentaFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+}
+
+.cuentaOpcion {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--color-danger);
+}
+
+.cuentaFila p {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.cuentaFila button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .cuentaFila {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* RF-13. Confirmación para dejar de ser trabajador/contratante (basada en el ConfirmModal de workers, sin modificarlo) */
+.modalFondo {
+  align-items: center;
+  backdrop-filter: blur(3px);
+  background: rgba(28, 35, 32, 0.48);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  max-width: 440px;
+  padding: 36px 40px;
+  text-align: center;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+
+/* Título y descripción con el mismo ancho y líneas equilibradas */
+.modal h2,
+.modal p {
+  margin: 0;
+  max-width: 340px;
+  width: 100%;
+  text-wrap: balance;
+}
+
+.modal p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.modalIcono {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border-radius: 50%;
+  color: var(--color-danger);
+  display: flex;
+  height: 72px;
+  justify-content: center;
+  width: 72px;
+}
+
+.modalAcciones {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+/* RF-13. Variante del modal con campo de razón: más ancha y con el campo a todo el ancho */
+.modalAncho {
+  max-width: 560px;
+}
+
+.modalCampo {
+  width: 100%;
+  text-align: left;
+}
+
+.modalCampo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  resize: vertical;
+}
+
+.modal .modalCampo p {
+  max-width: none;
+  font-size: 0.85rem;
+  text-wrap: wrap;
+}
+
+/* Título y descripción del mismo ancho que la caja de la razón */
+.modalAncho h2,
+.modalAncho p {
+  max-width: none;
+}
+
+/* Cancelar a la izquierda (como en Editar perfil) y la acción principal a la derecha */
+.modalAncho .modalAcciones {
+  width: 100%;
+  justify-content: space-between;
+}

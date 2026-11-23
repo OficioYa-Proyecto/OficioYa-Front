@@ -1,5 +1,4 @@
 import { request } from '../../core/lib/httpClient';
-import { tokenStorage } from '../../service/services/tokenStorage';
 
 const MIN_TEXT = 3;
 const MAX_TEXT = 500;
@@ -68,7 +67,6 @@ export const workersService = {
     if (text.length < MIN_TEXT) {
       throw new Error('Describe un poco m\u00e1s el servicio para buscar trabajadores.');
     }
-    const token = tokenStorage.get();
     const criterios = {
       barrioIds: neighborhoodId ? [Number(neighborhoodId)] : undefined,
       diaSemana: weekdayOf(date),
@@ -77,7 +75,6 @@ export const workersService = {
     const response = await request('/search/lenguaje-natural', {
       method: 'POST',
       body: { texto: text, criterios },
-      token: token || undefined,
     });
     const results = Array.isArray(response?.resultados) ? response.resultados : [];
     const workers = results.filter((item) => item.trabajadorId).map(toWorker);
@@ -86,8 +83,7 @@ export const workersService = {
   },
 
   lookup: async () => {
-    const token = tokenStorage.get();
-    const workers = await request('/workers', token ? { token } : undefined);
+    const workers = await request('/workers');
     return (workers ?? []).filter((w) => w.userId).map(toLookupWorker);
   },
 };

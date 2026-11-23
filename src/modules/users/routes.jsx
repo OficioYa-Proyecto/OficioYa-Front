@@ -1,0 +1,20 @@
+import ProfileView from './components/ProfileView';
+import ProfileForm from './components/ProfileForm';
+import UserTable from './components/UserTable';
+import UserDetail from './components/UserDetail';
+import AdminOnly from './components/AdminOnly';
+import RoleRequestsPage from './components/RoleRequestsPage';
+
+export const routes = [
+    { path: '/users/me', element: <ProfileView key="me" /> },
+    { path: '/users/me/edit', element: <ProfileForm /> },
+    { path: '/users/:id', element: <ProfileView /> },
+    { path: '/admin/users', element: <AdminOnly><UserTable /></AdminOnly> },
+    { path: '/admin/users/:id', element: <AdminOnly><UserDetail /></AdminOnly> },
+    { path: '/admin/role-requests', element: <AdminOnly><RoleRequestsPage /></AdminOnly> },
+];
+
+export const navLinks = [
+    { label: 'Usuarios', to: '/admin/users', roles: ['ADMIN'] },
+    { label: 'Peticiones', to: '/admin/role-requests', roles: ['ADMIN'] },
+];

@@ -1,0 +1,223 @@
+/* Tarjetas de resumen: total, activas e inactivas */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.summaryCard {
+  display: grid;
+  gap: 4px;
+}
+
+.summaryCard small {
+  color: var(--color-text-muted);
+}
+
+.summaryCard strong {
+  font-size: 2rem;
+}
+
+.detail,
+.detailAlert {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detail {
+  color: var(--color-success);
+}
+
+.detailAlert {
+  color: var(--color-danger);
+}
+
+/* Buscador a la izquierda y filtros de estado a la derecha */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.toolbar input {
+  max-width: 340px;
+}
+
+/* X para borrar la búsqueda: negra (color del texto/borde) en vez de la azul del navegador */
+.toolbar input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background-color: var(--color-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  cursor: pointer;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter,
+.filterActive {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.filterActive {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-accent);
+}
+
+/* Paginación: 10 cuentas por página */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pagination .filters {
+  flex-wrap: wrap;
+}
+
+.pagination small {
+  color: var(--color-text-muted);
+}
+
+.filter:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* Columnas de ancho fijo: Estado y Acción quedan en el mismo lugar en todas las páginas */
+.table {
+  table-layout: fixed;
+}
+
+.table th:nth-child(1) {
+  width: 42%;
+}
+
+.table th:nth-child(2) {
+  width: 28%;
+}
+
+.table th:nth-child(3),
+.table th:nth-child(4) {
+  width: 15%;
+}
+
+.table td {
+  overflow-wrap: anywhere;
+}
+
+/* Foto (o iniciales) a la izquierda del nombre */
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #d3e4dc;
+  color: #214e3f;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.roles {
+  display: block;
+  color: var(--color-text-muted);
+}
+
+.pillActive,
+.pillInactive {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pillActive {
+  background: #e7f4ee;
+  color: var(--color-success);
+}
+
+.pillInactive {
+  background: #fdecea;
+  color: var(--color-danger);
+}
+
+.link {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    display: none;
+  }
+
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
