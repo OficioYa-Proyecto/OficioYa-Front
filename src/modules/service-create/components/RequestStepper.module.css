@@ -11,10 +11,10 @@
 .tab {
   display: grid;
   justify-items: center;
-  gap: 6px;
-  padding: 12px 4px 10px;
+  gap: 8px;
+  padding: 14px 6px 12px;
   margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   color: var(--color-text-muted);
 }
 
@@ -26,12 +26,12 @@
 .circle {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid #cdd5db;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #cdd5db;
   border-radius: 50%;
   background: var(--color-surface);
-  font-size: 0.85rem;
+  font-size: 1.15rem;
   font-weight: 700;
 }
 
@@ -42,20 +42,21 @@
 }
 
 .label {
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 3.4vw, 1.1rem);
   font-weight: 700;
+  text-align: center;
 }
 
 .progress {
   display: grid;
-  gap: 8px;
-  padding: 14px 0 0;
+  gap: 10px;
+  padding: 16px 0 0;
 }
 
 .meta {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: var(--color-text-muted);
 }
 
@@ -64,7 +65,7 @@
 }
 
 .track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: var(--color-primary-soft);
   overflow: hidden;

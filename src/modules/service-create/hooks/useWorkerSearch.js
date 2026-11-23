@@ -1,30 +1,30 @@
 import { useCallback, useEffect, useState } from 'react';
 import { workersService } from '../services/workersService';
 
-const LOADING = { status: 'loading', workers: [], error: '' };
+const LOADING = { status: 'loading', workers: [], message: '', error: '' };
 
-export function useWorkerSearch({ neighborhood, date, time }) {
+export function useWorkerSearch({ description, neighborhoodId, date, time }) {
   const [state, setState] = useState(LOADING);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     workersService
-      .search({ neighborhood, date, time })
-      .then((workers) => {
+      .search({ description, neighborhoodId, date, time })
+      .then(({ workers, message }) => {
         if (!cancelled) {
-          setState({ status: 'ready', workers, error: '' });
+          setState({ status: 'ready', workers, message, error: '' });
         }
       })
       .catch((e) => {
         if (!cancelled) {
-          setState({ status: 'error', workers: [], error: e.message });
+          setState({ status: 'error', workers: [], message: '', error: e.message });
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [neighborhood, date, time, attempt]);
+  }, [description, neighborhoodId, date, time, attempt]);
 
   const retry = useCallback(() => {
     setState(LOADING);

@@ -34,7 +34,7 @@ function CreateRequestPage() {
 
   useEffect(() => {
     if (!preselectedWorkerId) return;
-    workersService.search({ neighborhood: 'Laureles' }).then((ws) => {
+    workersService.lookup().then((ws) => {
       const w = ws.find((x) => x.id === preselectedWorkerId);
       if (w) {
         setPreselectedWorker(w);
