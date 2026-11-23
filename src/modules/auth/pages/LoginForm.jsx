@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchMyProfile, hasWorkerProfile, login } from '../services/authService';
 import { saveSession } from '../../core/lib/session';
+import { recordActivity } from '../hooks/useInactivityTimeout';
 import styles from './AuthPage.module.css';
 
 // Validación manual en español (no dependemos del idioma del navegador)
@@ -23,7 +24,7 @@ export default function LoginForm({ onForgot }) {
       return 'Cuenta creada. Ya puedes iniciar sesión.';
     }
     if (searchParams.get('expired') === '1') {
-      return 'Tu sesión expiró. Inicia sesión de nuevo.';
+      return 'Tu sesión expiró por inactividad. Inicia sesión de nuevo.';
     }
     return '';
   });
@@ -49,6 +50,7 @@ export default function LoginForm({ onForgot }) {
         roles: rolesArray,
         expiresInSeconds: data.expiresInSeconds,
       });
+      recordActivity();
 
       const [profileData, workerExists] = await Promise.all([
         fetchMyProfile().catch(() => null),

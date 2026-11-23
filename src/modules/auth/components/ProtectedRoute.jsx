@@ -1,27 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { clearSession, getSession } from '../../core/lib/session';
+import { getSession } from '../../core/lib/session';
 
 export default function ProtectedRoute({ children }) {
-  const session = getSession();
+  const [session, setSession] = useState(() => getSession());
 
   useEffect(() => {
-    if (!session?.expiresAt) return;
+    const handleSessionUpdate = () => {
+      setSession(getSession());
+    };
 
-    const remainingMs = session.expiresAt - Date.now();
-    if (remainingMs <= 0) {
-      clearSession();
-      window.location.assign('/auth?expired=1');
-      return;
-    }
+    window.addEventListener('oy-session-refreshed', handleSessionUpdate);
+    window.addEventListener('oy-profile-updated', handleSessionUpdate);
 
-    const timer = setTimeout(() => {
-      clearSession();
-      window.location.assign('/auth?expired=1');
-    }, remainingMs);
-
-    return () => clearTimeout(timer);
-  }, [session?.expiresAt]);
+    return () => {
+      window.removeEventListener('oy-session-refreshed', handleSessionUpdate);
+      window.removeEventListener('oy-profile-updated', handleSessionUpdate);
+    };
+  }, []);
 
   if (!session) {
     return <Navigate to="/auth" replace />;
