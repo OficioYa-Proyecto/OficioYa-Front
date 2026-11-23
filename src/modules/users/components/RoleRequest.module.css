@@ -1,0 +1,71 @@
+.lista {
+  display: grid;
+  gap: 16px;
+}
+
+.tarjeta {
+  display: grid;
+  gap: 10px;
+}
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.encabezado > div {
+  display: grid;
+  gap: 2px;
+}
+
+.usuario {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.fecha {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.razon {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.estado {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pendiente {
+  background: #fff4e0;
+  color: #9a5b00;
+}
+
+.aprobada {
+  background: #e7f4ee;
+  color: var(--color-success);
+}
+
+.rechazada {
+  background: #fdecea;
+  color: var(--color-danger);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

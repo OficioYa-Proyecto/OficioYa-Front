@@ -26,9 +26,5 @@ export function useProfile(id) {
     setPerfil(await profileService.agregarRol(rol, ACCESS_TOKEN));
   }
 
-  async function quitarRol(rol) {
-    setPerfil(await profileService.quitarRol(rol, ACCESS_TOKEN));
-  }
-
-  return { perfil, cargando, error, actualizar, agregarRol, quitarRol};
+  return { perfil, cargando, error, actualizar, agregarRol };
 }

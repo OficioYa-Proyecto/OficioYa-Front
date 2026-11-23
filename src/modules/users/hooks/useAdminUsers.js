@@ -24,13 +24,17 @@ export function useAdminUser(id) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     getUser(id, ACCESS_TOKEN)
       .then((data) => setUser(data))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, version]);
+
+  // Vuelve a pedir la cuenta (p. ej. después de aprobar una petición para quitar un rol)
+  const recargar = () => setVersion((v) => v + 1);
 
   // action: 'activate' | 'deactivate'
   async function updateStatus(action, reason) {
@@ -57,5 +61,5 @@ export function useAdminUser(id) {
     }
   }
 
-  return { user, loading, error, actionError, updateStatus, quitarRol };
+  return { user, loading, error, actionError, updateStatus, quitarRol, recargar };
 }

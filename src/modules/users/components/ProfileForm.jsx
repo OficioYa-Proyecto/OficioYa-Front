@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../hooks/useProfile';
 import { usePhones } from '../hooks/usePhones';
 import { deleteImage, getProfilePhoto, uploadImage } from '../../core/lib/imageService';
-import { clearSession, getSession } from '../../core/lib/session';
-import { ROLES_AGREGABLES, ROLES_QUITABLES } from '../config';
+import { getSession } from '../../core/lib/session';
+import { MAX_RAZON_ROL, MIN_RAZON_ROL, ROLES_AGREGABLES, ROLES_QUITABLES } from '../config';
+import { useMisPeticionesRol } from '../hooks/useRoleRequests';
 import AlertIcon from '../../workers/components/ui/Icon';
 import Button from '../../core/design-system/Button';
 import ErrorMessage from '../../core/components/ErrorMessage';
@@ -32,7 +33,7 @@ function copiarTelefonos(lista) {
 }
 
 function ProfileForm() {
-  const { perfil, cargando, error, actualizar, agregarRol, quitarRol } = useProfile();
+  const { perfil, cargando, error, actualizar, agregarRol } = useProfile();
   const telefonos = usePhones();
   const navigate = useNavigate();
 
@@ -61,7 +62,6 @@ function ProfileForm() {
                 telefonos={telefonos}
                 onGuardar={actualizar}
                 onAgregarRol={agregarRol}
-                onQuitarRol={quitarRol}
                 onSalir={() => navigate('/users/me')}
             />
         )}
@@ -69,7 +69,7 @@ function ProfileForm() {
   );
 }
 
-function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, onSalir }) {
+function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
   const navigate = useNavigate();
   const [name, setName] = useState(perfil.name ?? '');
   const [nombreVisible, setNombreVisible] = useState(perfil.name ?? '');
@@ -90,22 +90,36 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
   const [rolGuardando, setRolGuardando] = useState(null);
   const [rolAgregado, setRolAgregado] = useState(null);
   const [rolPorQuitar, setRolPorQuitar] = useState(null);
-  const [rolQuitando, setRolQuitando] = useState(null);
-  const [rolQuitado, setRolQuitado] = useState(null);
+  const [razon, setRazon] = useState('');
+  const [razonTocada, setRazonTocada] = useState(false);
+  const [enviandoPeticion, setEnviandoPeticion] = useState(false);
+  const [errorPeticion, setErrorPeticion] = useState(null);
+  const misPeticiones = useMisPeticionesRol();
   const fileInputRef = useRef(null);
 
   const roles = perfil.roles ?? [];
   const esAdmin = roles.includes('ADMIN');
-  // Sobre mi cuenta: con un solo rol se ofrece agregar el otro (RF-02); con ambos, dejar cualquiera (RF-13).
-  // Después de agregar o quitar uno no se muestran más opciones hasta volver a iniciar sesión
-  const cambioHecho = rolAgregado !== null || rolQuitado !== null;
+  const esContratante = roles.includes('CONTRATANTE');
+  // Sobre mi cuenta: con un solo rol se ofrece agregar el otro (RF-02); con ambos, pedir dejar cualquiera (RF-13).
+  // Después de agregar uno no se muestran más opciones hasta volver a iniciar sesión
+  const cambioHecho = rolAgregado !== null;
+  // RF-13. Solo el admin quita roles: mientras haya una petición pendiente no se puede crear otra
+  const ultimaPeticion = misPeticiones.peticiones[0] ?? null;
+  const peticionPendiente = ultimaPeticion?.status === 'PENDING' ? ultimaPeticion : null;
+  const rolesSesion = getSession()?.roles ?? [];
+  const aprobadaSinLogin = ultimaPeticion?.status === 'APPROVED' && rolesSesion.includes(ultimaPeticion.role);
+  const razonRecortada = razon.trim();
+  const errorRazon = razonRecortada.length < MIN_RAZON_ROL
+      ? `La razón debe tener al menos ${MIN_RAZON_ROL} caracteres`
+      : null;
   const rolesFaltantes = esAdmin || cambioHecho
       ? []
       : Object.keys(ROLES_AGREGABLES).filter((r) => !roles.includes(r));
-  const rolesQuitables = !esAdmin && !cambioHecho && Object.keys(ROLES_QUITABLES).every((r) => roles.includes(r))
+  const rolesQuitables = !esAdmin && !cambioHecho && !misPeticiones.cargando && !peticionPendiente
+      && Object.keys(ROLES_QUITABLES).every((r) => roles.includes(r))
       ? Object.keys(ROLES_QUITABLES)
       : [];
-  const ocupadoRol = rolGuardando !== null || rolQuitando !== null;
+  const ocupadoRol = rolGuardando !== null || enviandoPeticion;
   const errorNombre = name.trim() === '' ? 'El nombre es obligatorio' : null;
   const erroresTelefono = phones.map((phone, idx) => {
     if (!enviado) return null;
@@ -236,7 +250,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
     setGuardado(false);
     setGuardando(true);
     try {
-      await onGuardar({ name: name.trim(), localityId: localityId ? Number(localityId) : undefined });
+      await onGuardar({ name: name.trim(), localityId: esContratante && localityId ? Number(localityId) : undefined });
       setNombreVisible(name.trim());
       await guardarTelefonos();
       if (photoFile && perfil?.id) {
@@ -276,22 +290,27 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
     }
   }
 
-  // RF-13. El token todavía trae el rol quitado: se cierra la sesión para que el próximo login traiga los roles nuevos
-  async function confirmarQuitarRol() {
-    const rol = rolPorQuitar;
-    setRolPorQuitar(null);
+  function abrirPeticion(rol) {
+    setRazon('');
+    setRazonTocada(false);
+    setErrorPeticion(null);
+    setRolPorQuitar(rol);
+  }
+
+  // RF-13. Se envía la petición; el rol solo cambia cuando el administrador la aprueba
+  async function enviarPeticion() {
+    setRazonTocada(true);
+    if (errorRazon) return;
     setErrorCuenta(null);
-    setRolAgregado(null);
-    setRolQuitando(rol);
+    setErrorPeticion(null);
+    setEnviandoPeticion(true);
     try {
-      await onQuitarRol(rol);
-      localStorage.removeItem('oy_userName');
-      clearSession();
-      setRolQuitado(rol);
+      await misPeticiones.pedir(rolPorQuitar, razonRecortada);
+      setRolPorQuitar(null);
     } catch (e) {
-      setErrorCuenta(e.message);
+      setErrorPeticion(e.message);
     } finally {
-      setRolQuitando(null);
+      setEnviandoPeticion(false);
     }
   }
 
@@ -410,8 +429,8 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
               {tocado && errorNombre && <p className={styles.fieldError}>{errorNombre}</p>}
             </div>
 
-            {/* RF-14. Una localidad; no se puede dejar vacía una vez elegida (no aplica para administradores) */}
-            {!esAdmin && (
+            {/* RF-14. Solo el contratante tiene localidad; no se puede dejar vacía una vez elegida */}
+            {esContratante && (
                 <div className={styles.field}>
                   <label htmlFor="localityId" className={reg.label}>Tu localidad</label>
                   <select
@@ -448,7 +467,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
             <button type="button" className={reg.linkBack} onClick={onSalir}>
               {guardado ? 'Volver al perfil' : 'Cancelar'}
             </button>
-            <button type="submit" form={FORM_ID} className={reg.btnSubmit} disabled={guardando || rolQuitado !== null}>
+            <button type="submit" form={FORM_ID} className={reg.btnSubmit} disabled={guardando}>
               {guardando ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
@@ -491,10 +510,10 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
                       <Button
                           type="button"
                           variant="danger"
-                          onClick={() => setRolPorQuitar(rol)}
+                          onClick={() => abrirPeticion(rol)}
                           disabled={ocupadoRol}
                       >
-                        {rolQuitando === rol ? 'Procesando...' : 'Continuar'}
+                        Continuar
                       </Button>
                     </div>
                 ))}
@@ -511,11 +530,29 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
                       </p>
                     </div>
                 )}
-                {rolQuitado && (
+                {peticionPendiente && (
+                    <div className={vista.success}>
+                      <span className={vista.successIcon}>⏳</span>
+                      <p>
+                        <strong>Tu petición para dejar de ser {ROLES_QUITABLES[peticionPendiente.role].nombre} está en revisión.</strong>{' '}
+                        Un administrador la revisará; mientras tanto conservas tus roles.
+                      </p>
+                    </div>
+                )}
+                {ultimaPeticion?.status === 'REJECTED' && (
+                    <div className={styles.cuentaError}>
+                      <p>
+                        <strong>El administrador rechazó tu petición para dejar de ser {ROLES_QUITABLES[ultimaPeticion.role].nombre}.</strong>{' '}
+                        Motivo: {ultimaPeticion.adminReason}
+                      </p>
+                    </div>
+                )}
+                {aprobadaSinLogin && (
                     <div className={vista.success}>
                       <span className={vista.successIcon}>✓</span>
                       <p>
-                        <strong>{ROLES_QUITABLES[rolQuitado].quitado}</strong> Inicia sesión de nuevo para aplicar el cambio.
+                        <strong>El administrador aprobó tu petición: ya no eres {ROLES_QUITABLES[ultimaPeticion.role].nombre}.</strong>{' '}
+                        Inicia sesión de nuevo para aplicar el cambio.
                       </p>
                       <Button type="button" onClick={() => navigate('/auth', { replace: true })}>Iniciar sesión</Button>
                     </div>
@@ -526,13 +563,35 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onQuitarRol, on
 
         {rolPorQuitar && (
             <div className={styles.modalFondo} role="presentation">
-              <div aria-label={ROLES_QUITABLES[rolPorQuitar].titulo} aria-modal="true" className={styles.modal} role="dialog">
+              <div aria-label={ROLES_QUITABLES[rolPorQuitar].titulo} aria-modal="true" className={`${styles.modal} ${styles.modalAncho}`} role="dialog">
                 <span className={styles.modalIcono}><AlertIcon name="warning" size={36} /></span>
                 <h2>{ROLES_QUITABLES[rolPorQuitar].titulo}</h2>
                 <p>{ROLES_QUITABLES[rolPorQuitar].texto}</p>
+                <div className={`${styles.field} ${styles.modalCampo}`}>
+                  <div className={styles.labelRow}>
+                    <label htmlFor="razon-rol" className={styles.label}>
+                      Razón<span className={styles.required}>*</span>
+                    </label>
+                    <span className={styles.counter}>{razonRecortada.length}/{MAX_RAZON_ROL} (mínimo {MIN_RAZON_ROL})</span>
+                  </div>
+                  <textarea
+                      id="razon-rol"
+                      value={razon}
+                      onChange={(e) => setRazon(e.target.value)}
+                      onBlur={() => setRazonTocada(true)}
+                      maxLength={MAX_RAZON_ROL}
+                      rows={3}
+                  />
+                  {razonTocada && errorRazon && <p className={styles.fieldError}>{errorRazon}</p>}
+                  {errorPeticion && <p className={styles.fieldError}>{errorPeticion}</p>}
+                </div>
                 <div className={styles.modalAcciones}>
-                  <Button type="button" onClick={() => setRolPorQuitar(null)} variant="outline">Cancelar</Button>
-                  <Button type="button" onClick={confirmarQuitarRol} variant="danger">Confirmar</Button>
+                  <button type="button" className={reg.linkBack} onClick={() => setRolPorQuitar(null)} disabled={enviandoPeticion}>
+                    Cancelar
+                  </button>
+                  <Button type="button" onClick={enviarPeticion} variant="danger" disabled={enviandoPeticion}>
+                    {enviandoPeticion ? 'Enviando...' : 'Enviar petición'}
+                  </Button>
                 </div>
               </div>
             </div>
