@@ -1124,193 +1124,6 @@
   cursor: not-allowed;
 }
 
-/* ─── Responsive ─── */
-@media (max-width: 920px) {
-  .grid4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .grid3,
-  .kpiGrid {
-    grid-template-columns: 1fr;
-  }
-  .twoRolesCard {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 30px 28px;
-    gap: 24px;
-  }
-  .twoRolesRight {
-    width: 100%;
-  }
-  .addRoleBtn {
-    width: 100%;
-  }
-  .twoRolesWorkerCard {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 30px 24px;
-    gap: 24px;
-  }
-  .twoRolesWorkerRight {
-    width: 100%;
-  }
-  .addRoleBtnWhite {
-    width: 100%;
-  }
-  .bothRolesGrid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 680px) {
-  .hero {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 28px 24px;
-  }
-  .grid2,
-  .grid4 {
-    grid-template-columns: 1fr;
-  }
-  .upsellBanner,
-  .accountCard,
-  .priorityHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .accountActions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  .heroContratante {
-    padding: 26px 20px;
-    gap: 14px;
-  }
-  .heroTitleContratante {
-    font-size: 2.1rem;
-  }
-  .heroDescContratante {
-    font-size: 0.95rem;
-  }
-  .heroActions {
-    flex-direction: column;
-    width: 100%;
-    gap: 10px;
-  }
-  .primaryPillBtn,
-  .secondaryPillBtn {
-    width: 100%;
-  }
-  .howItWorksGrid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .todayCard {
-    padding: 26px 18px;
-  }
-  .todayTitle {
-    font-size: 1.45rem;
-  }
-  .todayGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .todayActionCard {
-    padding: 24px 20px;
-  }
-  .todayPrimaryBtn,
-  .todaySecondaryBtn {
-    width: 100%;
-  }
-  .twoRolesCard {
-    padding: 24px 20px;
-    gap: 20px;
-  }
-  .twoRolesTitle {
-    font-size: 1.25rem;
-  }
-  .twoRolesDesc {
-    font-size: 0.88rem;
-  }
-  .benefitsList {
-    gap: 8px;
-  }
-  .benefitItem {
-    font-size: 0.86rem;
-  }
-  .bothRolesSection {
-    padding: 24px 16px;
-  }
-  .roleCardContratar,
-  .roleCardTrabajar {
-    padding: 22px 16px;
-  }
-  .innerActionRow,
-  .innerActionRowStatic {
-    padding: 14px 12px;
-    gap: 10px;
-  }
-  .tabsContainer {
-    width: 100%;
-    display: flex;
-  }
-  .tabPill {
-    flex: 1;
-    text-align: center;
-  }
-  .heroWorker {
-    padding: 26px 20px;
-    gap: 14px;
-  }
-  .heroTitleWorker {
-    font-size: 2.1rem;
-  }
-  .heroDescWorker {
-    font-size: 0.95rem;
-  }
-  .heroWorkerActions {
-    flex-direction: column;
-    width: 100%;
-    gap: 10px;
-  }
-  .heroAvailablePill {
-    width: 100%;
-    justify-content: center;
-  }
-  .workerMetricsGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .workerMetricCard {
-    padding: 22px 20px;
-  }
-  .workerTodaySection {
-    padding: 26px 18px;
-  }
-  .workerTodayGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .workerActionCardBlue {
-    width: 100%;
-  }
-  .workerPrimaryBtn,
-  .workerOutlineBtn {
-    width: 100%;
-  }
-  .tipsSection {
-    padding: 26px 18px;
-  }
-  .tipItem {
-    padding: 12px 14px;
-  }
-  .twoRolesWorkerCard {
-    padding: 24px 18px;
-    gap: 20px;
-  }
-}
-
 /* ─── Ambos Roles (Contratante + Trabajador - Figma) ─── */
 .bothRolesSection {
   background: #ffffff;
@@ -2139,5 +1952,192 @@
 .addRoleBtnWhite:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 920px) {
+  .grid4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid3,
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  .twoRolesCard {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 30px 28px;
+    gap: 24px;
+  }
+  .twoRolesRight {
+    width: 100%;
+  }
+  .addRoleBtn {
+    width: 100%;
+  }
+  .twoRolesWorkerCard {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 30px 24px;
+    gap: 24px;
+  }
+  .twoRolesWorkerRight {
+    width: 100%;
+  }
+  .addRoleBtnWhite {
+    width: 100%;
+  }
+  .bothRolesGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 680px) {
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px 24px;
+  }
+  .grid2,
+  .grid4 {
+    grid-template-columns: 1fr;
+  }
+  .upsellBanner,
+  .accountCard,
+  .priorityHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .accountActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .heroContratante {
+    padding: 26px 20px;
+    gap: 14px;
+  }
+  .heroTitleContratante {
+    font-size: 2.1rem;
+  }
+  .heroDescContratante {
+    font-size: 0.95rem;
+  }
+  .heroActions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .primaryPillBtn,
+  .secondaryPillBtn {
+    width: 100%;
+  }
+  .howItWorksGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .todayCard {
+    padding: 26px 18px;
+  }
+  .todayTitle {
+    font-size: 1.45rem;
+  }
+  .todayGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .todayActionCard {
+    padding: 24px 20px;
+  }
+  .todayPrimaryBtn,
+  .todaySecondaryBtn {
+    width: 100%;
+  }
+  .twoRolesCard {
+    padding: 24px 20px;
+    gap: 20px;
+  }
+  .twoRolesTitle {
+    font-size: 1.25rem;
+  }
+  .twoRolesDesc {
+    font-size: 0.88rem;
+  }
+  .benefitsList {
+    gap: 8px;
+  }
+  .benefitItem {
+    font-size: 0.86rem;
+  }
+  .bothRolesSection {
+    padding: 24px 16px;
+  }
+  .roleCardContratar,
+  .roleCardTrabajar {
+    padding: 22px 16px;
+  }
+  .innerActionRow,
+  .innerActionRowStatic {
+    padding: 14px 12px;
+    gap: 10px;
+  }
+  .tabsContainer {
+    width: 100%;
+    display: flex;
+  }
+  .tabPill {
+    flex: 1;
+    text-align: center;
+  }
+  .heroWorker {
+    padding: 26px 20px;
+    gap: 14px;
+  }
+  .heroTitleWorker {
+    font-size: 2.1rem;
+  }
+  .heroDescWorker {
+    font-size: 0.95rem;
+  }
+  .heroWorkerActions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .heroAvailablePill {
+    width: 100%;
+    justify-content: center;
+  }
+  .workerMetricsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .workerMetricCard {
+    padding: 22px 20px;
+  }
+  .workerTodaySection {
+    padding: 26px 18px;
+  }
+  .workerTodayGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .workerActionCardBlue {
+    width: 100%;
+  }
+  .workerPrimaryBtn,
+  .workerOutlineBtn {
+    width: 100%;
+  }
+  .tipsSection {
+    padding: 26px 18px;
+  }
+  .tipItem {
+    padding: 12px 14px;
+  }
+  .twoRolesWorkerCard {
+    padding: 24px 18px;
+    gap: 20px;
+  }
 }
 
