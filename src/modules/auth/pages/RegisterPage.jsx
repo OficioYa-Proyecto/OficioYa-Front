@@ -372,7 +372,7 @@ export default function RegisterPage() {
 
           // Redirección directa según rol
           if (rolesArray.includes('TRABAJADOR')) {
-            navigate('/worker/create-profile');
+            navigate('/worker/create');
           } else {
             navigate('/home');
           }
