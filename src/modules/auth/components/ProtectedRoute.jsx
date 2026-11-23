@@ -10,12 +10,19 @@ export default function ProtectedRoute({ children }) {
       setSession(getSession());
     };
 
+    const handleSessionExpired = () => {
+      setSession(null);
+      window.location.assign('/auth?expired=1');
+    };
+
     window.addEventListener('oy-session-refreshed', handleSessionUpdate);
     window.addEventListener('oy-profile-updated', handleSessionUpdate);
+    window.addEventListener('oy-session-expired', handleSessionExpired);
 
     return () => {
       window.removeEventListener('oy-session-refreshed', handleSessionUpdate);
       window.removeEventListener('oy-profile-updated', handleSessionUpdate);
+      window.removeEventListener('oy-session-expired', handleSessionExpired);
     };
   }, []);
 

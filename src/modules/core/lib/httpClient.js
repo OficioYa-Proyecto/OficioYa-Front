@@ -23,9 +23,9 @@ export async function request(path, { method = 'GET', body, token, responseType 
     throw new Error('No se pudo conectar con el servidor');
   }
 
-  if (response.status === 401 && jwt) {
+  if (response.status === 401 && !path.startsWith('/auth/login')) {
     clearSession();
-    if (window.location.pathname !== LOGIN_PATH) {
+    if (!window.location.pathname.startsWith(LOGIN_PATH)) {
       window.location.assign('/auth?expired=1');
     }
   }

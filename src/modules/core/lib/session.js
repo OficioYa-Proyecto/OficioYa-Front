@@ -40,6 +40,9 @@ export function getSession() {
 
   if (expiresAt && Date.now() >= expiresAt) {
     clearSession();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('oy-session-expired'));
+    }
     return null;
   }
 
