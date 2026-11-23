@@ -49,7 +49,7 @@ function ServiceMini({ values }) {
 }
 
 function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
-  const { status, workers, error, retry } = useWorkerSearch(values);
+  const { status, workers, message: searchMessage, error, retry } = useWorkerSearch(values);
   const [submitted, setSubmitted] = useState(false);
 
   const selectedIds = new Set(values.workers.map((w) => w.id));
@@ -105,7 +105,7 @@ function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
       {status === 'ready' && workers.length === 0 && (
         <div className={styles.state}>
           <h3>No hay trabajadores disponibles en {neighborhood}</h3>
-          <p>Prueba con otro barrio, otra fecha u otra hora.</p>
+          <p>{searchMessage || 'Prueba con otro barrio, otra fecha u otra hora.'}</p>
           <Button type="button" variant="secondary" onClick={onEditRequest}>
             Cambiar datos de la solicitud
           </Button>
