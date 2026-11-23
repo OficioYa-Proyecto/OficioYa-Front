@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import { getMyWorker } from '../services/workersService';
+import { getMyWorker, updateAvailableNow } from '../services/workersService';
+import { getToken } from '../../core/lib/session';
 
-// Perfil del trabajador en sesión, compartido por todas las pantallas (layout, panel, oficios...).
+// Perfil del trabajador en sesión, compartido por todas las pantallas (layout, panel, oficios, home...).
 // Se consulta una sola vez; después de cada cambio la pantalla llama refresh().
 let state = { data: null, loading: true, error: null };
 let started = false;
+let lastToken = null;
 const listeners = new Set();
 
 function setState(changes) {
@@ -13,6 +15,11 @@ function setState(changes) {
 }
 
 export async function refreshMyWorker() {
+  lastToken = getToken() || null;
+  if (!lastToken) {
+    setState({ data: null, loading: false, error: null });
+    return;
+  }
   try {
     setState({ data: await getMyWorker(), loading: false, error: null });
   } catch (error) {
@@ -20,9 +27,30 @@ export async function refreshMyWorker() {
   }
 }
 
+export async function toggleMyWorkerAvailableNow() {
+  if (!state.data?.id) return;
+  const workerId = state.data.id;
+  const previous = Boolean(state.data.availableNow);
+  const next = !previous;
+
+  // Actualización optimista inmediata (0 ms de espera visual)
+  setState({ data: { ...state.data, availableNow: next } });
+
+  try {
+    await updateAvailableNow(workerId, next);
+  } catch (error) {
+    // Si falla la petición, revertimos al estado anterior
+    if (state.data?.id === workerId) {
+      setState({ data: { ...state.data, availableNow: previous } });
+    }
+    throw error;
+  }
+}
+
 function subscribe(listener) {
   listeners.add(listener);
-  if (!started) {
+  const currentToken = getToken() || null;
+  if (!started || currentToken !== lastToken) {
     started = true;
     refreshMyWorker();
   }
@@ -37,5 +65,9 @@ export function getMyWorkerState() {
 // data = WorkerResponse, o null si el usuario aún no tiene perfil.
 export function useMyWorker() {
   const snapshot = useSyncExternalStore(subscribe, () => state);
-  return { ...snapshot, refresh: refreshMyWorker };
+  return {
+    ...snapshot,
+    refresh: refreshMyWorker,
+    toggleAvailableNow: toggleMyWorkerAvailableNow,
+  };
 }

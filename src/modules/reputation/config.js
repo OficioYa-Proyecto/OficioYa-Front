@@ -13,16 +13,6 @@ export const PERFILES = {
   [uid(108)]: { nombre: 'Daniel Rojas', oficio: 'Plomería' },
 };
 
-export const SERVICIOS = {
-  CONTRATANTE: [
-    { solicitudId: uid(900001), titulo: 'Reparación de fuga en el lavamanos', contraparte: 'Carlos Martínez', trabajadorId: uid(101) },
-    { solicitudId: uid(900002), titulo: 'Instalación de tomas eléctricas', contraparte: 'Lucía Fernández', trabajadorId: uid(102) },
-  ],
-  TRABAJADOR: [
-    { solicitudId: uid(900001), titulo: 'Reparación de fuga en el lavamanos', contraparte: 'Ana Cárdenas', trabajadorId: uid(101) },
-  ],
-};
-
 export const MOTIVOS_REPORTE = [
   { valor: 'FALSA', etiqueta: 'Es falsa' },
   { valor: 'INAPROPIADA', etiqueta: 'Es inapropiada' },

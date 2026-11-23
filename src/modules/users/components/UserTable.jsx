@@ -214,7 +214,18 @@ function porcentaje(parte, total) {
 }
 
 function enmascararCorreo(correo) {
-    return '*****' + correo.slice(correo.indexOf('@'));
+    if (!correo) return '';
+    const idx = correo.indexOf('@');
+    if (idx <= 0) return '*****';
+    const usuario = correo.slice(0, idx);
+    const dominio = correo.slice(idx);
+    if (usuario.length <= 2) {
+        return usuario[0] + '***' + dominio;
+    }
+    if (usuario.length <= 4) {
+        return usuario.slice(0, 2) + '***' + dominio;
+    }
+    return usuario.slice(0, 2) + '***' + usuario.slice(-1) + dominio;
 }
 
 export default UserTable;

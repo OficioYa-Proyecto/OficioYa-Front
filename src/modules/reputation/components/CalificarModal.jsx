@@ -23,7 +23,12 @@ function CalificarModal({ servicio, token, alCalificar, alCerrar }) {
       await reputationService.calificar(servicio.solicitudId, puntuacion, comentario.trim(), token);
       alCalificar();
     } catch (e) {
-      setError(e.status === 409 ? 'Ya calificaste este servicio.' : e.message);
+      // Reputation responde 409 tanto si ya calificaste como si el servicio aún no figura como cumplido.
+      if (e.status === 409 && /ya calific/i.test(e.message)) {
+        alCalificar();
+        return;
+      }
+      setError(e.message);
       setEnviando(false);
     }
   }

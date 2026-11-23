@@ -643,9 +643,13 @@
 }
 
 .profileHeaderSide {
+  align-items: baseline;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 18px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 7px;
   padding: 10px 18px;
 }
 

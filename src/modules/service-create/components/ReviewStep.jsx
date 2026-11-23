@@ -51,10 +51,12 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
                   <strong>{worker.name}</strong>
                   <span>{worker.trade}</span>
                 </span>
-                <span className={styles.rating}>
-                  <StarIcon size={14} />
-                  {worker.rating.toFixed(1)}
-                </span>
+                {typeof worker.rating === 'number' && (
+                  <span className={styles.rating}>
+                    <StarIcon size={14} />
+                    {worker.rating.toFixed(1)}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

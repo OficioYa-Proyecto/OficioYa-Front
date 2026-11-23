@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Button from '../../core/design-system/Button';
-import { tokenStorage } from '../../service/services/tokenStorage';
+import { getToken } from '../../core/lib/session';
 import { DETAILS_FORM_ID, SENT_STEP, STEPS, WORKERS_FORM_ID } from '../config';
 import { useCreateRequest } from '../hooks/useCreateRequest';
 import { EMPTY_FORM } from '../requestForm';
@@ -25,7 +25,7 @@ function sendLabel(count) {
 }
 
 function CreateRequestPage() {
-  const [token] = useState(() => tokenStorage.get() || 'dummy-token-local');
+  const [token] = useState(() => getToken() ?? '');
   const { workerId: preselectedWorkerId } = useParams();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -34,7 +34,7 @@ function CreateRequestPage() {
 
   useEffect(() => {
     if (!preselectedWorkerId) return;
-    workersService.search({ neighborhood: 'Laureles' }).then((ws) => {
+    workersService.lookup().then((ws) => {
       const w = ws.find((x) => x.id === preselectedWorkerId);
       if (w) {
         setPreselectedWorker(w);

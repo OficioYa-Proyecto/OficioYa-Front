@@ -36,33 +36,6 @@ export async function agregarRol(rol, token) {
   return data;
 }
 
-export async function quitarRol(rol, token) {
-  const data = await request(`/users/me/roles/${rol}`, { method: 'DELETE', token });
-  if (data?.token) {
-    saveSession({
-      token: data.token,
-      userId: data.id,
-      roles: data.roles,
-    });
-    window.dispatchEvent(new Event('oy-profile-updated'));
-  } else {
-    try {
-      const refreshed = await request('/auth/refresh', { method: 'POST', token });
-      if (refreshed?.token) {
-        saveSession({
-          token: refreshed.token,
-          userId: refreshed.userId,
-          roles: refreshed.roles,
-        });
-        window.dispatchEvent(new Event('oy-profile-updated'));
-      }
-    } catch {
-      // Si el endpoint no responde se conserva la sesion previa
-    }
-  }
-  return data;
-}
-
 export function obtenerMisTelefonos(token) {
   return request('/users/me/phones', { token });
 }

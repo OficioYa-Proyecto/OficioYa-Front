@@ -4,6 +4,8 @@ import ErrorMessage from '../../core/components/ErrorMessage';
 import { useAdminUser } from '../hooks/useAdminUsers';
 import { useProfile } from '../hooks/useProfile';
 import StatusSelector from './StatusSelector';
+import RoleRequestCard from './RoleRequestCard';
+import { usePeticionesRol } from '../hooks/useRoleRequests';
 import Skeleton from './Skeleton';
 import ProfileHeader from './ProfileHeader';
 import ContactCard from './ContactCard';
@@ -12,7 +14,8 @@ import vista from './ProfileView.module.css';
 
 function UserDetail() {
   const { id } = useParams();
-  const { user, loading, error, actionError, updateStatus, quitarRol } = useAdminUser(id);
+  const { user, loading, error, actionError, updateStatus, quitarRol, recargar } = useAdminUser(id);
+  const pendientes = usePeticionesRol({ status: 'PENDING', userId: id });
   const { perfil: me } = useProfile(); // usuario logueado (GET /users/me)
   const navigate = useNavigate();
 
@@ -38,6 +41,19 @@ function UserDetail() {
 
   const isActive = user.accountStatus === 'ACTIVE';
   const isSelf = me?.id === user.id;
+
+  // RF-13. Al aprobar se quita el rol: se vuelve a pedir la cuenta para ver sus roles actuales
+  async function resolverPeticion(peticionId, accion, motivo) {
+    await pendientes.resolver(peticionId, accion, motivo);
+    if (accion === 'approve') recargar();
+  }
+
+  // Quitar el rol desde el selector aprueba la petición pendiente de ese rol en el back
+  async function quitarRolYActualizar(rol) {
+    const ok = await quitarRol(rol);
+    if (ok) pendientes.recargar();
+    return ok;
+  }
 
   return (
       <section className={vista.page}>
@@ -77,6 +93,15 @@ function UserDetail() {
               <dd>{new Date(user.updatedAt).toLocaleString()}</dd>
             </dl>
 
+            {pendientes.peticiones.length > 0 && (
+                <>
+                  <h2 className={styles.sectionTitle}>Petición para dejar de ser trabajador o contratante</h2>
+                  {pendientes.peticiones.map((p) => (
+                      <RoleRequestCard key={p.id} peticion={p} onResolver={resolverPeticion} />
+                  ))}
+                </>
+            )}
+
             <h2 className={styles.sectionTitle}>Estado de la cuenta</h2>
             {me && (isSelf ? (
                 <p>No puedes cambiar el estado de tu propia cuenta.</p>
@@ -87,7 +112,7 @@ function UserDetail() {
                     isActive={isActive}
                     roles={user.roles ?? []}
                     onSubmit={updateStatus}
-                    onRemoveRole={quitarRol}
+                    onRemoveRole={quitarRolYActualizar}
                 />
             ))}
             <ErrorMessage error={actionError} />

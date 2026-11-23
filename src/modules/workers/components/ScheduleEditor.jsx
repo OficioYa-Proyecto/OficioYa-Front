@@ -17,6 +17,9 @@ import styles from './worker.module.css';
 
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 const DAY_ORDER = DAYS.map((dia) => dia.value);
+const HALF_HOUR_STEP_SECONDS = 30 * 60;
+const HALF_HOUR_TIME = /^(?:[01]\d|2[0-3]):(?:00|30)(?::00(?:\.0+)?)?$/;
+const HALF_HOUR_MESSAGE = 'Elige una hora en punto o a la media hora';
 
 function today() {
   const date = new Date();
@@ -47,8 +50,12 @@ function validar({ recurrenceType, dayOfWeek, startDate, endDate, startTime, end
   const errors = {};
   if (!startDate) errors.startDate = 'Selecciona una fecha';
   if (!startTime) errors.startTime = 'Selecciona la hora de inicio';
+  else if (!HALF_HOUR_TIME.test(startTime)) errors.startTime = HALF_HOUR_MESSAGE;
   if (!endTime) errors.endTime = 'Selecciona la hora de fin';
-  if (startTime && endTime && startTime >= endTime) errors.endTime = 'Debe ser posterior a la hora de inicio';
+  else if (!HALF_HOUR_TIME.test(endTime)) errors.endTime = HALF_HOUR_MESSAGE;
+  if (!errors.startTime && !errors.endTime && startTime.slice(0, 5) >= endTime.slice(0, 5)) {
+    errors.endTime = 'Debe ser posterior a la hora de inicio';
+  }
   if (recurrenceType === 'RECURRING') {
     if (!dayOfWeek) errors.dayOfWeek = 'Selecciona el día';
     // El back exige fecha de fin para las repetitivas.
@@ -164,12 +171,13 @@ function ScheduleEditor({ slots = [], availableNow = false, readOnly = false, wo
     event.preventDefault();
     setMessage(null);
     // Mismo cuerpo que AvailabilitySlotRequest en el back.
-    const slotItem = form.recurrenceType === 'FIXED'
+    let slotItem = form.recurrenceType === 'FIXED'
       ? { ...form, dayOfWeek: null, endDate: null }
       : form;
     const foundErrors = Object.fromEntries(Object.entries(validar(slotItem)).filter(([, labelText]) => labelText));
     setErrors(foundErrors);
     if (Object.keys(foundErrors).length) return;
+    slotItem = { ...slotItem, startTime: form.startTime.slice(0, 5), endTime: form.endTime.slice(0, 5) };
     if (slots.some((slot) => slot.id !== editing && overlaps(slot, slotItem))) {
       setMessage({ type: 'error', text: 'Esta franja se cruza con otra que ya tienes.' });
       return;
@@ -195,8 +203,8 @@ function ScheduleEditor({ slots = [], availableNow = false, readOnly = false, wo
       dayOfWeek: slot.dayOfWeek ?? 'MONDAY',
       startDate: slot.startDate,
       endDate: slot.endDate ?? '',
-      startTime: slot.startTime.slice(0, 5),
-      endTime: slot.endTime.slice(0, 5),
+      startTime: slot.startTime,
+      endTime: slot.endTime,
     });
     setErrors({});
     setMessage(null);
@@ -271,8 +279,8 @@ function ScheduleEditor({ slots = [], availableNow = false, readOnly = false, wo
           <Field error={errors.startDate} label="Fecha" onChange={setField('startDate')} required type="date" value={form.startDate} />
         )}
         <div className={styles.twoCols}>
-          <Field error={errors.startTime} label="Hora de inicio" onChange={setField('startTime')} required type="time" value={form.startTime} />
-          <Field error={errors.endTime} label="Hora de fin" onChange={setField('endTime')} required type="time" value={form.endTime} />
+          <Field error={errors.startTime} label="Hora de inicio" min="00:00" step={HALF_HOUR_STEP_SECONDS} onChange={setField('startTime')} required type="time" value={form.startTime} />
+          <Field error={errors.endTime} label="Hora de fin" min="00:00" step={HALF_HOUR_STEP_SECONDS} onChange={setField('endTime')} required type="time" value={form.endTime} />
         </div>
         {message && <StatusMessage variant={message.type}>{message.text}</StatusMessage>}
         <div className={styles.slotActions}>

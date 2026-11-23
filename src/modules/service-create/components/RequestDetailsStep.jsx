@@ -1,22 +1,32 @@
 import { useState } from 'react';
-import { DETAILS_FORM_ID } from '../config';
-import { todayISO, validateDetails } from '../requestForm';
+import Button from '../../core/design-system/Button';
+import { DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import { useZones } from '../hooks/useZones';
+import {
+  EMPTY_FORM,
+  composeAddress,
+  formatSlot,
+  normalizeDigits,
+  normalizeVia,
+  timeSlots,
+  todayISO,
+  validateDetails,
+} from '../requestForm';
 import { CalendarIcon, ClockIcon, MapPinIcon } from './icons';
 import PhotoPicker from './PhotoPicker';
 import styles from './RequestDetailsStep.module.css';
 
-const NEIGHBORHOODS = [
-  'Laureles',
-  'El Poblado',
-  'Envigado',
-  'Sabaneta',
-  'Bello',
-  'Itagüí',
-  'Robledo',
-  'Belén',
-  'Manrique',
-  'Aranjuez',
-];
+function groupByLocality(zones) {
+  const groups = new Map();
+  for (const zone of zones) {
+    const key = zone.locality || 'Otros';
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(zone);
+  }
+  return Array.from(groups, ([locality, items]) => ({ locality, items }));
+}
 
 function fieldProps(id, error, { required = false, hint = false } = {}) {
   const describedBy = [hint ? `${id}-hint` : null, error ? `${id}-error` : null]
@@ -59,10 +69,80 @@ function Field({ id, label, required, hint, error, icon, children }) {
   );
 }
 
+function AddressFields({ values, onChange, error }) {
+  const address = { ...EMPTY_FORM.address, ...values.address };
+  const invalid = Boolean(error);
+
+  const update = (patch) => {
+    const next = { ...address, ...patch };
+    onChange({ address: next, exactAddress: composeAddress(next) });
+  };
+
+  return (
+    <div className={styles.address}>
+      <select
+        className={styles.addressSelect}
+        {...fieldProps('field-exactAddress', error, { required: true, hint: true })}
+        value={address.roadType}
+        onChange={(event) => update({ roadType: event.target.value })}
+      >
+        <option value="">Tipo de vía</option>
+        {ROAD_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+      <input
+        className={styles.addressInput}
+        type="text"
+        autoComplete="off"
+        maxLength={4}
+        placeholder="74"
+        aria-label="Número o letra de la vía"
+        aria-invalid={invalid}
+        value={address.main}
+        onChange={(event) => update({ main: normalizeVia(event.target.value) })}
+      />
+      <span className={styles.separator} aria-hidden="true">
+        #
+      </span>
+      <input
+        className={styles.addressInput}
+        type="text"
+        autoComplete="off"
+        maxLength={4}
+        placeholder="39"
+        aria-label="Número después del numeral"
+        aria-invalid={invalid}
+        value={address.cross}
+        onChange={(event) => update({ cross: normalizeVia(event.target.value) })}
+      />
+      <span className={styles.separator} aria-hidden="true">
+        -
+      </span>
+      <input
+        className={styles.addressInput}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={3}
+        placeholder="25"
+        aria-label="Último número de la dirección"
+        aria-invalid={invalid}
+        value={address.number}
+        onChange={(event) => update({ number: normalizeDigits(event.target.value) })}
+      />
+    </div>
+  );
+}
+
 function RequestDetailsStep({ values, onChange, onSubmit }) {
   const [submitted, setSubmitted] = useState(false);
   const errors = validateDetails(values);
   const visible = submitted ? errors : {};
+  const zones = useZones();
+  const groups = groupByLocality(zones.items);
 
   const bind = (name) => ({
     value: values[name],
@@ -102,44 +182,52 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
         </div>
 
         <div className={styles.column}>
-          <div className={styles.row}>
-            <Field
-              id="field-neighborhood"
-              label="Barrio"
-              required
-              hint="Lista provisional; la definitiva viene del dominio Worker."
-              error={visible.neighborhood}
-              icon={<MapPinIcon size={18} />}
+          <Field
+            id="field-neighborhood"
+            label="Barrio"
+            required
+            error={visible.neighborhood}
+            icon={<MapPinIcon size={18} />}
+          >
+            <select
+              {...fieldProps('field-neighborhood', visible.neighborhood, { required: true })}
+              value={values.neighborhood}
+              onChange={(event) => {
+                const name = event.target.value;
+                const zone = zones.items.find((item) => item.name === name);
+                onChange({ neighborhood: name, neighborhoodId: zone ? zone.id : '' });
+              }}
             >
-              <select
-                {...fieldProps('field-neighborhood', visible.neighborhood, {
-                  required: true,
-                  hint: true,
-                })}
-                {...bind('neighborhood')}
-              >
-                <option value="">Selecciona</option>
-                {NEIGHBORHOODS.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field
-              id="field-exactAddress"
-              label="Dirección exacta"
-              required
-              error={visible.exactAddress}
-            >
-              <input
-                type="text"
-                placeholder="Ej: Cra. 74 # 39-25"
-                {...fieldProps('field-exactAddress', visible.exactAddress, { required: true })}
-                {...bind('exactAddress')}
-              />
-            </Field>
-          </div>
+              <option value="">{zones.status === 'loading' ? 'Cargando barrios' : 'Selecciona'}</option>
+              {groups.map((group) => (
+                <optgroup key={group.locality} label={group.locality}>
+                  {group.items.map((zone) => (
+                    <option key={zone.id} value={zone.name}>
+                      {zone.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </Field>
+          {zones.status === 'error' && (
+            <div className={styles.hint} role="alert">
+              <p>No pudimos cargar los barrios.</p>
+              <Button type="button" variant="secondary" onClick={zones.retry}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          <Field
+            id="field-exactAddress"
+            label="Dirección exacta"
+            required
+            hint="Ejemplo: Carrera 74 # 39-25"
+            error={visible.exactAddress}
+          >
+            <AddressFields values={values} onChange={onChange} error={visible.exactAddress} />
+          </Field>
 
           <div className={`${styles.row} ${styles.rowEven}`}>
             <Field
@@ -153,7 +241,11 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
                 type="date"
                 min={todayISO()}
                 {...fieldProps('field-date', visible.date, { required: true })}
-                {...bind('date')}
+                value={values.date}
+                onChange={(event) => {
+                  const date = event.target.value;
+                  onChange(timeSlots(date).includes(values.time) ? { date } : { date, time: '' });
+                }}
               />
             </Field>
             <Field
@@ -163,11 +255,17 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
               error={visible.time}
               icon={<ClockIcon size={18} />}
             >
-              <input
-                type="time"
+              <select
                 {...fieldProps('field-time', visible.time, { required: true })}
                 {...bind('time')}
-              />
+              >
+                <option value="">Selecciona</option>
+                {timeSlots(values.date).map((slot) => (
+                  <option key={slot} value={slot}>
+                    {formatSlot(slot)}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
         </div>

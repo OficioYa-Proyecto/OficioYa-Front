@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { uploadImage } from '../../core/lib/imageService';
 import { saveSession } from '../../core/lib/session';
+import { recordActivity } from '../hooks/useInactivityTimeout';
 import { login, register } from '../services/authService';
 import { useLocalidades } from '../../users/hooks/useLocalidades';
 import { PASSWORD_RULES, validatePassword } from '../utils/passwordPolicy';
@@ -347,6 +348,7 @@ export default function RegisterPage() {
             roles: rolesArray,
             expiresInSeconds: authData.expiresInSeconds,
           });
+          recordActivity();
 
           // Pre-cargar nombre en localStorage para el saludo sin parpadeo
           const userName = createdUser?.name || payload.name;
@@ -372,7 +374,7 @@ export default function RegisterPage() {
 
           // Redirección directa según rol
           if (rolesArray.includes('TRABAJADOR')) {
-            navigate('/worker/create-profile');
+            navigate('/worker/create');
           } else {
             navigate('/home');
           }
@@ -628,9 +630,9 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* RF-14. Zona de cobertura opcional; se puede cambiar después en Editar perfil */}
+              {/* RF-14. Localidad opcional; se puede cambiar después en Editar perfil */}
               <div className={`${styles.formGroup} ${styles.gridFull}`}>
-                <label className={styles.label} htmlFor="localityId">Zona de cobertura</label>
+                <label className={styles.label} htmlFor="localityId">Tu localidad</label>
                 <select id="localityId" className={styles.select} value={localityId} onChange={(e) => setLocalityId(e.target.value)}>
                   <option value="">Selecciona una localidad</option>
                   {localidades.map((localidad) => (

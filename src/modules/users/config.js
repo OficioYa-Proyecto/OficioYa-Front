@@ -34,25 +34,29 @@ export const ROLES_AGREGABLES = {
   },
 };
 
-// Botón y confirmación para quitar un rol cuando la cuenta tiene ambos
+// RF-13. Botón y formulario para pedirle al administrador que quite un rol cuando la cuenta tiene ambos
 export const ROLES_QUITABLES = {
   TRABAJADOR: {
     boton: 'Quiero dejar de ser trabajador',
-    descripcion: 'Tu perfil de trabajador se pausa y deja de aparecer en búsquedas.',
+    descripcion: 'Envía una petición al administrador. Si la aprueba, tu perfil de trabajador se pausa y deja de aparecer en búsquedas.',
     aviso: 'No puedes tener solicitudes activas como trabajador.',
     titulo: '¿Dejar de ser trabajador?',
-    texto: 'Tu perfil se pausará y no aparecerá en búsquedas. Puedes reactivarlo cuando quieras.',
-    quitado: 'Ya no eres trabajador.',
+    texto: 'Cuéntanos por qué deseas dejar de ser trabajador, un administrador revisará tu petición.',
+    nombre: 'trabajador',
   },
   CONTRATANTE: {
     boton: 'Quiero dejar de ser contratante',
-    descripcion: 'Ya no podrás solicitar servicios con esta cuenta.',
+    descripcion: 'Envía una petición al administrador. Si la aprueba, ya no podrás solicitar servicios con esta cuenta.',
     aviso: 'No puedes tener solicitudes activas como contratante.',
     titulo: '¿Dejar de ser contratante?',
-    texto: 'No podrás solicitar servicios hasta que vuelvas a ser contratante.',
-    quitado: 'Ya no eres contratante.',
+    texto: 'Cuéntanos por qué deseas dejar de ser contratante, un administrador revisará tu petición.',
+    nombre: 'contratante',
   },
 };
+
+// Mismos límites que valida el back (RoleRemovalRequestDTO)
+export const MIN_RAZON_ROL = 10;
+export const MAX_RAZON_ROL = 500;
 
 // Nombre legible de cada rol (perfil, edición y listado del admin)
 export const NOMBRES_ROL = {

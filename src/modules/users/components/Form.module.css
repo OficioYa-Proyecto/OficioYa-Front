@@ -422,3 +422,37 @@
   justify-content: center;
   margin-top: 8px;
 }
+/* RF-13. Variante del modal con campo de razón: más ancha y con el campo a todo el ancho */
+.modalAncho {
+  max-width: 560px;
+}
+
+.modalCampo {
+  width: 100%;
+  text-align: left;
+}
+
+.modalCampo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  resize: vertical;
+}
+
+.modal .modalCampo p {
+  max-width: none;
+  font-size: 0.85rem;
+  text-wrap: wrap;
+}
+
+/* Título y descripción del mismo ancho que la caja de la razón */
+.modalAncho h2,
+.modalAncho p {
+  max-width: none;
+}
+
+/* Cancelar a la izquierda (como en Editar perfil) y la acción principal a la derecha */
+.modalAncho .modalAcciones {
+  width: 100%;
+  justify-content: space-between;
+}
