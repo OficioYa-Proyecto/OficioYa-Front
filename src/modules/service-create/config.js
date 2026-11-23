@@ -39,6 +39,19 @@ export const PHOTO_RULES = {
   accepted: ['image/jpeg', 'image/png', 'image/webp'],
 };
 
+export const ROAD_TYPES = [
+  'Avenida',
+  'Avenida Calle',
+  'Avenida Carrera',
+  'Calle',
+  'Carrera',
+  'Circular',
+  'Circunvalar',
+  'Diagonal',
+  'Transversal',
+  'Autopista',
+];
+
 export const DETAILS_FORM_ID = 'request-details-form';
 
 export const WORKERS_FORM_ID = 'request-workers-form';

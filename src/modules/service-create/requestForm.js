@@ -2,17 +2,53 @@ export const EMPTY_FORM = {
   description: '',
   photos: [],
   neighborhood: '',
+  address: { roadType: '', main: '', cross: '', number: '' },
   exactAddress: '',
   date: '',
   time: '',
   workers: [],
 };
 
+const VIA_PATTERN = /^[0-9]{1,3}[A-Z]?$/;
+const NUMBER_PATTERN = /^[0-9]{1,3}$/;
+
 const pad = (value) => String(value).padStart(2, '0');
 const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export function todayISO(now = new Date()) {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+export function normalizeVia(value) {
+  const clean = value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+  return /^\d{0,3}[A-Z]?/.exec(clean)[0];
+}
+
+export function normalizeDigits(value) {
+  return value.replace(/\D/g, '').slice(0, 3);
+}
+
+export function composeAddress({ roadType, main, cross, number }) {
+  if (!roadType || !main || !cross || !number) {
+    return '';
+  }
+  return `${roadType} ${main} # ${cross}-${number}`;
+}
+
+function validateAddress(address) {
+  if (!address.roadType) {
+    return 'Selecciona el tipo de vía.';
+  }
+  if (!VIA_PATTERN.test(address.main)) {
+    return 'Escribe el número de la vía, por ejemplo 74 o 5A.';
+  }
+  if (!VIA_PATTERN.test(address.cross)) {
+    return 'Escribe el número después del #, por ejemplo 39 o 39B.';
+  }
+  if (!NUMBER_PATTERN.test(address.number)) {
+    return 'Escribe el último número, por ejemplo 25.';
+  }
+  return '';
 }
 
 function parseSchedule(date, time) {
@@ -35,6 +71,7 @@ function parseSchedule(date, time) {
 
 export function validateDetails(values, now = new Date()) {
   const errors = {};
+  const address = { ...EMPTY_FORM.address, ...values.address };
 
   if (!values.description.trim()) {
     errors.description = 'Describe el servicio que necesitas.';
@@ -42,8 +79,10 @@ export function validateDetails(values, now = new Date()) {
   if (!values.neighborhood.trim()) {
     errors.neighborhood = 'Indica el barrio.';
   }
-  if (!values.exactAddress.trim()) {
-    errors.exactAddress = 'Indica la dirección exacta.';
+
+  const addressError = validateAddress(address);
+  if (addressError) {
+    errors.exactAddress = addressError;
   }
 
   if (!values.date) {

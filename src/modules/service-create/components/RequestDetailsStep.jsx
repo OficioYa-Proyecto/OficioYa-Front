@@ -1,6 +1,13 @@
 import { useState } from 'react';
-import { DETAILS_FORM_ID } from '../config';
-import { todayISO, validateDetails } from '../requestForm';
+import { DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import {
+  EMPTY_FORM,
+  composeAddress,
+  normalizeDigits,
+  normalizeVia,
+  todayISO,
+  validateDetails,
+} from '../requestForm';
 import { CalendarIcon, ClockIcon, MapPinIcon } from './icons';
 import PhotoPicker from './PhotoPicker';
 import styles from './RequestDetailsStep.module.css';
@@ -59,6 +66,74 @@ function Field({ id, label, required, hint, error, icon, children }) {
   );
 }
 
+function AddressFields({ values, onChange, error }) {
+  const address = { ...EMPTY_FORM.address, ...values.address };
+  const invalid = Boolean(error);
+
+  const update = (patch) => {
+    const next = { ...address, ...patch };
+    onChange({ address: next, exactAddress: composeAddress(next) });
+  };
+
+  return (
+    <div className={styles.address}>
+      <select
+        className={styles.addressSelect}
+        {...fieldProps('field-exactAddress', error, { required: true, hint: true })}
+        value={address.roadType}
+        onChange={(event) => update({ roadType: event.target.value })}
+      >
+        <option value="">Tipo de vía</option>
+        {ROAD_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+      <input
+        className={styles.addressInput}
+        type="text"
+        autoComplete="off"
+        maxLength={4}
+        placeholder="74"
+        aria-label="Número o letra de la vía"
+        aria-invalid={invalid}
+        value={address.main}
+        onChange={(event) => update({ main: normalizeVia(event.target.value) })}
+      />
+      <span className={styles.separator} aria-hidden="true">
+        #
+      </span>
+      <input
+        className={styles.addressInput}
+        type="text"
+        autoComplete="off"
+        maxLength={4}
+        placeholder="39"
+        aria-label="Número después del numeral"
+        aria-invalid={invalid}
+        value={address.cross}
+        onChange={(event) => update({ cross: normalizeVia(event.target.value) })}
+      />
+      <span className={styles.separator} aria-hidden="true">
+        -
+      </span>
+      <input
+        className={styles.addressInput}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={3}
+        placeholder="25"
+        aria-label="Último número de la dirección"
+        aria-invalid={invalid}
+        value={address.number}
+        onChange={(event) => update({ number: normalizeDigits(event.target.value) })}
+      />
+    </div>
+  );
+}
+
 function RequestDetailsStep({ values, onChange, onSubmit }) {
   const [submitted, setSubmitted] = useState(false);
   const errors = validateDetails(values);
@@ -102,44 +177,35 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
         </div>
 
         <div className={styles.column}>
-          <div className={styles.row}>
-            <Field
-              id="field-neighborhood"
-              label="Barrio"
-              required
-              hint="Lista provisional; la definitiva viene del dominio Worker."
-              error={visible.neighborhood}
-              icon={<MapPinIcon size={18} />}
+          <Field
+            id="field-neighborhood"
+            label="Barrio"
+            required
+            error={visible.neighborhood}
+            icon={<MapPinIcon size={18} />}
+          >
+            <select
+              {...fieldProps('field-neighborhood', visible.neighborhood, { required: true })}
+              {...bind('neighborhood')}
             >
-              <select
-                {...fieldProps('field-neighborhood', visible.neighborhood, {
-                  required: true,
-                  hint: true,
-                })}
-                {...bind('neighborhood')}
-              >
-                <option value="">Selecciona</option>
-                {NEIGHBORHOODS.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field
-              id="field-exactAddress"
-              label="Dirección exacta"
-              required
-              error={visible.exactAddress}
-            >
-              <input
-                type="text"
-                placeholder="Ej: Cra. 74 # 39-25"
-                {...fieldProps('field-exactAddress', visible.exactAddress, { required: true })}
-                {...bind('exactAddress')}
-              />
-            </Field>
-          </div>
+              <option value="">Selecciona</option>
+              {NEIGHBORHOODS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field
+            id="field-exactAddress"
+            label="Dirección exacta"
+            required
+            hint="Ejemplo: Carrera 74 # 39-25"
+            error={visible.exactAddress}
+          >
+            <AddressFields values={values} onChange={onChange} error={visible.exactAddress} />
+          </Field>
 
           <div className={`${styles.row} ${styles.rowEven}`}>
             <Field
