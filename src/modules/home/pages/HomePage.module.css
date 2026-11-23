@@ -1145,6 +1145,18 @@
   .addRoleBtn {
     width: 100%;
   }
+  .twoRolesWorkerCard {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 30px 24px;
+    gap: 24px;
+  }
+  .twoRolesWorkerRight {
+    width: 100%;
+  }
+  .addRoleBtnWhite {
+    width: 100%;
+  }
   .bothRolesGrid {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1246,6 +1258,56 @@
   .tabPill {
     flex: 1;
     text-align: center;
+  }
+  .heroWorker {
+    padding: 26px 20px;
+    gap: 14px;
+  }
+  .heroTitleWorker {
+    font-size: 2.1rem;
+  }
+  .heroDescWorker {
+    font-size: 0.95rem;
+  }
+  .heroWorkerActions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .heroAvailablePill {
+    width: 100%;
+    justify-content: center;
+  }
+  .workerMetricsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .workerMetricCard {
+    padding: 22px 20px;
+  }
+  .workerTodaySection {
+    padding: 26px 18px;
+  }
+  .workerTodayGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .workerActionCardBlue {
+    width: 100%;
+  }
+  .workerPrimaryBtn,
+  .workerOutlineBtn {
+    width: 100%;
+  }
+  .tipsSection {
+    padding: 26px 18px;
+  }
+  .tipItem {
+    padding: 12px 14px;
+  }
+  .twoRolesWorkerCard {
+    padding: 24px 18px;
+    gap: 20px;
   }
 }
 
@@ -1676,5 +1738,406 @@
   padding: 4px 14px;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+/* ─── Home Solo Trabajador (Figma) ─── */
+.heroWorker {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 40px 44px;
+  border-radius: 26px;
+  border: 1px solid #eadfd1;
+  background:
+    radial-gradient(circle at 84% 35%, rgba(235, 179, 148, 0.38) 0%, rgba(235, 179, 148, 0) 55%),
+    linear-gradient(135deg, #f7efe6 0%, #f4e8dc 58%, #f2dfd0 100%);
+  box-shadow: 0 12px 34px rgba(36, 49, 45, 0.05);
+}
+
+.rolePillWorker {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #e3eff8;
+  border: 1px solid #c8dfee;
+  color: #1d4e73;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.heroTitleWorker {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.1rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  color: #1f2d2a;
+}
+
+.heroDescWorker {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #56635f;
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.heroWorkerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.heroAvailablePill {
+  background: #ffffff;
+  border: 1.5px solid #e5ded4;
+  border-radius: 999px;
+  padding: 6px 18px 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(36, 49, 45, 0.04);
+  font-family: inherit;
+}
+
+.heroAvailablePill:hover {
+  border-color: #d2c5b6;
+  box-shadow: 0 4px 12px rgba(36, 49, 45, 0.08);
+}
+
+.heroAvailablePill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.heroAvailableLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #24312d;
+  user-select: none;
+}
+
+/* Worker Metrics Grid */
+.workerMetricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.workerMetricCard {
+  background: #ffffff;
+  border: 1px solid #ebdcd0;
+  border-radius: 22px;
+  padding: 26px 28px;
+  box-shadow: 0 8px 24px rgba(36, 49, 45, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.workerMetricTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.workerMetricHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workerMetricTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1a2522;
+  margin: 0;
+}
+
+.workerMetricPercent {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #1e3a5f;
+  letter-spacing: -0.02em;
+}
+
+.workerMetricDesc {
+  margin: 14px 0 18px;
+  font-size: 0.88rem;
+  color: #626e6a;
+  line-height: 1.45;
+}
+
+.workerMetricDescMargin {
+  margin: 4px 0 18px;
+  font-size: 0.88rem;
+  color: #626e6a;
+  line-height: 1.45;
+}
+
+.workerOutlineBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1.5px solid #e4dacd;
+  color: #24312d;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  width: fit-content;
+}
+
+.workerOutlineBtn:hover {
+  border-color: #c65331;
+  color: #c65331;
+  transform: translateY(-1px);
+}
+
+.workerPrimaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: #c65331;
+  border: none;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  width: fit-content;
+}
+
+.workerPrimaryBtn:hover {
+  background: #b04626;
+  box-shadow: 0 4px 14px rgba(198, 83, 49, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Worker Today Section */
+.workerTodaySection {
+  background: #ffffff;
+  border: 1px solid #ebdcd0;
+  border-radius: 26px;
+  padding: 38px 32px;
+  box-shadow: 0 10px 30px rgba(36, 49, 45, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.sectionHeaderCentered {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sectionHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+
+.workerTodayGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.workerActionCardBlue {
+  background: #f1f6fa;
+  border: 1px solid #dae7f0;
+  border-radius: 20px;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.workerActionCardTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1a2522;
+  margin: 2px 0 0;
+}
+
+.workerActionCardDesc {
+  font-size: 0.88rem;
+  color: #576561;
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+/* Tips Section */
+.tipsSection {
+  background: #ffffff;
+  border: 1px solid #ebdcd0;
+  border-radius: 26px;
+  padding: 38px 32px;
+  box-shadow: 0 10px 30px rgba(36, 49, 45, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tipItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.tipItemDone {
+  background: #eaf6ee;
+  border: 1px solid #c5e7cf;
+}
+
+.tipItemPending {
+  background: #faf6f0;
+  border: 1px solid #ece2d7;
+}
+
+.tipItem:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(36, 49, 45, 0.04);
+}
+
+.tipLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tipIconDone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e824c;
+}
+
+.tipIconPending {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #b7a99c;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.tipTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1f2d2a;
+}
+
+.tipBadgeDone {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e824c;
+}
+
+.tipBadgePending {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #7f7469;
+}
+
+/* Two Roles Banner (Worker version) */
+.twoRolesWorkerCard {
+  background: #fbf4ec;
+  border: 1px solid #eedecf;
+  border-radius: 26px;
+  padding: 36px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  box-shadow: 0 10px 30px rgba(36, 49, 45, 0.04);
+}
+
+.twoRolesWorkerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 580px;
+}
+
+.twoRolesWorkerRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.briefcaseIconBoxPeach {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #c65331;
+  border: 1px solid #f0dfd2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(198, 83, 49, 0.08);
+}
+
+.addRoleBtnWhite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1.5px solid #dcd1c4;
+  color: #202e2b;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 3px 12px rgba(36, 49, 45, 0.06);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.addRoleBtnWhite:hover {
+  background: #f8f5f0;
+  border-color: #c65331;
+  color: #c65331;
+}
+
+.addRoleBtnWhite:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
