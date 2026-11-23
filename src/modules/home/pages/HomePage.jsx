@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getSession, saveSession } from '../../core/lib/session';
+import { requestsService } from '../../service/services/requestsService';
 import * as profileService from '../../users/services/profileService';
 import { useMyWorker } from '../../workers/hooks/useMyWorker';
 import { useProfilePhoto } from '../../workers/hooks/useProfilePhoto';
@@ -146,6 +147,7 @@ export default function HomePage() {
   const [userProfile, setUserProfile] = useState(null);
   const [addingRole, setAddingRole] = useState(false);
   const [howItWorksTab, setHowItWorksTab] = useState('contratar');
+  const [pendingWorkerRequests, setPendingWorkerRequests] = useState(0);
   const { data: workerProfile, toggleAvailableNow } = useMyWorker();
   const isAvailableNow = Boolean(workerProfile?.availableNow);
   const photoUrl = useProfilePhoto(session?.userId);
@@ -179,6 +181,24 @@ export default function HomePage() {
   const isContratante = roles.includes('CONTRATANTE');
   const isTrabajador = roles.includes('TRABAJADOR');
   const isBoth = isContratante && isTrabajador;
+
+  useEffect(() => {
+    if (!isTrabajador || !session?.token) return undefined;
+    let active = true;
+    requestsService
+      .listMine('TRABAJADOR')
+      .then((list) => {
+        if (!active || !Array.isArray(list)) return;
+        const pendingCount = list.filter((req) => req?.state === 'PENDING').length;
+        setPendingWorkerRequests(pendingCount);
+      })
+      .catch(() => {
+        if (active) setPendingWorkerRequests(0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isTrabajador, session?.token]);
 
   const firstName = getFirstName(profileName, '');
 
@@ -612,17 +632,25 @@ export default function HomePage() {
                 </Link>
 
                 {/* Solicitudes nuevas */}
-                <Link to="/solicitudes" className={styles.newRequestsCard}>
+                <Link to="/mis-servicios" className={styles.newRequestsCard}>
                   <div className={styles.newRequestsLeft}>
                     <div className={styles.innerActionIconBoxBlue}>
                       <BellIcon />
                     </div>
                     <div>
                       <h4 className={styles.newRequestsTitle}>Solicitudes nuevas</h4>
-                      <p className={styles.newRequestsDesc}>Tienes 2 por responder</p>
+                      <p className={styles.newRequestsDesc}>
+                        {pendingWorkerRequests === 0
+                          ? 'No tienes solicitudes pendientes por responder'
+                          : pendingWorkerRequests === 1
+                            ? 'Tienes 1 por responder'
+                            : `Tienes ${pendingWorkerRequests} por responder`}
+                      </p>
                     </div>
                   </div>
-                  <span className={styles.requestsCountBadge}>2</span>
+                  {pendingWorkerRequests > 0 && (
+                    <span className={styles.requestsCountBadge}>{pendingWorkerRequests}</span>
+                  )}
                 </Link>
               </div>
             </div>
@@ -832,14 +860,20 @@ export default function HomePage() {
                 </div>
                 <h3 className={styles.workerMetricTitle}>Solicitudes nuevas</h3>
               </div>
-              <span className={styles.requestsCountBadge}>2</span>
+              {pendingWorkerRequests > 0 && (
+                <span className={styles.requestsCountBadge}>{pendingWorkerRequests}</span>
+              )}
             </div>
 
             <p className={styles.workerMetricDescMargin}>
-              Tienes 2 solicitudes por responder. Mientras antes respondas, más confianza generas.
+              {pendingWorkerRequests === 0
+                ? 'No tienes solicitudes pendientes por responder en este momento.'
+                : pendingWorkerRequests === 1
+                  ? 'Tienes 1 solicitud por responder. Mientras antes respondas, más confianza generas.'
+                  : `Tienes ${pendingWorkerRequests} solicitudes por responder. Mientras antes respondas, más confianza generas.`}
             </p>
 
-            <Link to="/solicitudes" className={styles.workerPrimaryBtn}>
+            <Link to="/mis-servicios" className={styles.workerPrimaryBtn}>
               <span>Ver solicitudes</span>
               <ArrowRightIcon />
             </Link>
