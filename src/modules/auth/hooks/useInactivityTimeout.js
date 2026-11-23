@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { clearSession, getSession, saveSession } from '../../core/lib/session';
 import { refreshToken } from '../services/authService';
 
-const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos de inactividad
-const REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // Refrescar si faltan 5 min o menos y hubo actividad
-const CHECK_INTERVAL_MS = 15 * 1000; // Evaluar cada 15 segundos
-const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos exactos de inactividad
+const MIN_REFRESH_INTERVAL_MS = 60 * 1000; // Refrescar máximo 1 vez por minuto si hubo actividad nueva
+const CHECK_INTERVAL_MS = 5 * 1000; // Evaluar cada 5 segundos
+const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
 const LAST_ACTIVITY_KEY = 'oy_last_activity';
 
 export function recordActivity() {
@@ -17,84 +18,140 @@ export function getLastActivity() {
   return stored ? Number(stored) : Date.now();
 }
 
+function expireAndRedirect() {
+  clearSession();
+  if (!window.location.pathname.startsWith('/auth')) {
+    window.location.assign('/auth?expired=1');
+  }
+}
+
 /**
  * Hook global que gestiona la sesión por inactividad:
- * - Detecta actividad del usuario (clic, scroll, teclas).
- * - Si el usuario interactúa, reinicia el tiempo de inactividad y renueva el token
- *   en segundo plano antes de que expire (sesión deslizante).
- * - Si transcurren 15 minutos continuos sin interacción alguna, cierra la sesión.
+ * - Se activa en cualquier ruta autenticada (y se re-vincula al cambiar de ruta tras el login).
+ * - Si el usuario interactúa, reinicia el contador de 15 minutos y sincroniza el token con el backend.
+ * - Si transcurren 15 minutos continuos sin interacción alguna, limpia la sesión y redirige a /auth?expired=1.
  */
 export function useInactivityTimeout() {
+  const { pathname } = useLocation();
   const isRefreshingRef = useRef(false);
+  const lastRefreshedActivityRef = useRef(0);
+  const lastRefreshTimeRef = useRef(0);
 
   useEffect(() => {
+    const isAuthPage = pathname.startsWith('/auth');
+    if (isAuthPage) return undefined;
+
     const session = getSession();
     if (!session?.token) return undefined;
 
-    // Inicializar timestamp de actividad si no existe
+    const nowInit = Date.now();
     if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
       recordActivity();
+    }
+    if (lastRefreshedActivityRef.current === 0) {
+      lastRefreshedActivityRef.current = getLastActivity();
+      lastRefreshTimeRef.current = nowInit;
     }
 
     let lastWrite = 0;
     const handleUserActivity = () => {
+      if (!localStorage.getItem('oy_token')) return;
       const now = Date.now();
-      // Throttle a 2 segundos para no sobrecargar el almacenamiento en eventos frecuentes (scroll/clic)
+      const lastActivity = getLastActivity();
+
+      // Si el usuario vuelve después de 15+ minutos inactivo, cerrar sesión de inmediato sin reiniciar el reloj
+      if (now - lastActivity >= INACTIVITY_LIMIT_MS) {
+        expireAndRedirect();
+        return;
+      }
+
       if (now - lastWrite > 2000) {
         lastWrite = now;
         recordActivity();
       }
     };
 
-    ACTIVITY_EVENTS.forEach((event) => {
-      window.addEventListener(event, handleUserActivity, { passive: true });
-    });
-
-    const intervalId = setInterval(async () => {
+    const evaluateSession = async () => {
+      const hasRawToken = Boolean(localStorage.getItem('oy_token'));
       const currentSession = getSession();
-      if (!currentSession?.token) return;
+
+      // Si había sesión o estamos en ruta protegida y el token ya venció
+      if (!currentSession?.token) {
+        if (hasRawToken || !window.location.pathname.startsWith('/auth')) {
+          expireAndRedirect();
+        }
+        return;
+      }
 
       const now = Date.now();
       const lastActivity = getLastActivity();
       const idleTime = now - lastActivity;
 
-      // 1. Inactividad prolongada: han pasado 15 minutos sin interacción
+      // 1. Inactividad alcanzada (15 minutos sin actividad): sacar de la sesión inmediatamente
       if (idleTime >= INACTIVITY_LIMIT_MS) {
-        clearSession();
-        window.location.assign('/auth?expired=1');
+        expireAndRedirect();
         return;
       }
 
-      // 2. Usuario activo: si el token actual está próximo a expirar (<= 5 minutos restantes), renovarlo
+      // 2. Si hubo actividad nueva desde el último refresh y ya pasó al menos 1 minuto,
+      // renovar el JWT en segundo plano para alinear su vigencia con los 15 min desde la última actividad
+      const hadNewActivity = lastActivity > lastRefreshedActivityRef.current + 2000;
+      const cooldownPassed = now - lastRefreshTimeRef.current >= MIN_REFRESH_INTERVAL_MS;
       const expiresAt = currentSession.expiresAt;
-      const timeLeft = expiresAt ? expiresAt - now : 0;
+      const timeLeft = expiresAt ? expiresAt - now : INACTIVITY_LIMIT_MS;
 
-      if (timeLeft <= REFRESH_THRESHOLD_MS && !isRefreshingRef.current) {
-        isRefreshingRef.current = true;
-        try {
-          const fresh = await refreshToken();
-          if (fresh?.token) {
-            saveSession({
-              token: fresh.token,
-              userId: fresh.userId || currentSession.userId,
-              roles: fresh.roles || currentSession.roles,
-              expiresInSeconds: fresh.expiresInSeconds || 900,
-            });
-            window.dispatchEvent(new Event('oy-session-refreshed'));
+      if ((hadNewActivity && cooldownPassed) || (hadNewActivity && timeLeft <= 5 * 60 * 1000)) {
+        if (!isRefreshingRef.current) {
+          isRefreshingRef.current = true;
+          try {
+            const fresh = await refreshToken();
+            if (fresh?.token) {
+              saveSession({
+                token: fresh.token,
+                userId: fresh.userId || currentSession.userId,
+                roles: fresh.roles || currentSession.roles,
+                expiresInSeconds: fresh.expiresInSeconds || 900,
+              });
+              lastRefreshedActivityRef.current = lastActivity;
+              lastRefreshTimeRef.current = Date.now();
+              window.dispatchEvent(new Event('oy-session-refreshed'));
+            }
+          } catch {
+            // Si el backend rechaza el refresh con 401, httpClient redirigirá automáticamente a /auth?expired=1
+          } finally {
+            isRefreshingRef.current = false;
           }
-        } catch {
-          // Si falla momentáneamente por red, se reintentará en el próximo ciclo antes de expirar
-        } finally {
-          isRefreshingRef.current = false;
         }
       }
-    }, CHECK_INTERVAL_MS);
+    };
+
+    const handleExpiredEvent = () => {
+      expireAndRedirect();
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        evaluateSession();
+      }
+    };
+
+    ACTIVITY_EVENTS.forEach((event) => {
+      window.addEventListener(event, handleUserActivity, { passive: true });
+    });
+    window.addEventListener('oy-session-expired', handleExpiredEvent);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    const intervalId = setInterval(evaluateSession, CHECK_INTERVAL_MS);
 
     return () => {
       clearInterval(intervalId);
       ACTIVITY_EVENTS.forEach((event) => {
         window.removeEventListener(event, handleUserActivity);
       });
+      window.removeEventListener('oy-session-expired', handleExpiredEvent);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
-  }, []);
+  }, [pathname]);
 }
