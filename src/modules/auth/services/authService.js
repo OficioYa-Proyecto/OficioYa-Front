@@ -40,6 +40,13 @@ export function resetPassword({ email, code, newPassword }) {
   });
 }
 
+/** POST /api/v1/auth/refresh → { token, expiresInSeconds, userId, roles } */
+export function refreshToken() {
+  return request('/auth/refresh', {
+    method: 'POST',
+  });
+}
+
 /**
  * Consulta GET /api/v1/workers/me para saber si el usuario con rol TRABAJADOR
  * ya completó su perfil de trabajador.
