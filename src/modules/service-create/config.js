@@ -52,6 +52,8 @@ export const ROAD_TYPES = [
   'Autopista',
 ];
 
+export const TIME_SLOTS = { startHour: 6, endHour: 21, stepMinutes: 30 };
+
 export const DETAILS_FORM_ID = 'request-details-form';
 
 export const WORKERS_FORM_ID = 'request-workers-form';

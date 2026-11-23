@@ -5,8 +5,10 @@ import { useZones } from '../hooks/useZones';
 import {
   EMPTY_FORM,
   composeAddress,
+  formatSlot,
   normalizeDigits,
   normalizeVia,
+  timeSlots,
   todayISO,
   validateDetails,
 } from '../requestForm';
@@ -239,7 +241,11 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
                 type="date"
                 min={todayISO()}
                 {...fieldProps('field-date', visible.date, { required: true })}
-                {...bind('date')}
+                value={values.date}
+                onChange={(event) => {
+                  const date = event.target.value;
+                  onChange(timeSlots(date).includes(values.time) ? { date } : { date, time: '' });
+                }}
               />
             </Field>
             <Field
@@ -249,11 +255,17 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
               error={visible.time}
               icon={<ClockIcon size={18} />}
             >
-              <input
-                type="time"
+              <select
                 {...fieldProps('field-time', visible.time, { required: true })}
                 {...bind('time')}
-              />
+              >
+                <option value="">Selecciona</option>
+                {timeSlots(values.date).map((slot) => (
+                  <option key={slot} value={slot}>
+                    {formatSlot(slot)}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
         </div>

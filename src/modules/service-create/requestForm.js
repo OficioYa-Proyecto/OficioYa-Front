@@ -1,3 +1,5 @@
+import { TIME_SLOTS } from './config';
+
 export const EMPTY_FORM = {
   description: '',
   photos: [],
@@ -70,6 +72,27 @@ function parseSchedule(date, time) {
   return isReal ? result : null;
 }
 
+export function timeSlots(date, now = new Date()) {
+  const slots = [];
+  for (let hour = TIME_SLOTS.startHour; hour <= TIME_SLOTS.endHour; hour += 1) {
+    for (let minute = 0; minute < 60; minute += TIME_SLOTS.stepMinutes) {
+      slots.push(`${pad(hour)}:${pad(minute)}`);
+    }
+  }
+  if (date !== todayISO(now)) {
+    return slots;
+  }
+  return slots.filter((slot) => parseSchedule(date, slot) > now);
+}
+
+export function formatSlot(slot) {
+  const when = parseSchedule('2000-01-01', slot);
+  if (!when) {
+    return slot;
+  }
+  return when.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 export function validateDetails(values, now = new Date()) {
   const errors = {};
   const address = { ...EMPTY_FORM.address, ...values.address };
@@ -96,8 +119,8 @@ export function validateDetails(values, now = new Date()) {
 
   if (!values.time) {
     errors.time = 'Selecciona la hora del servicio.';
-  } else if (!parseSchedule('2000-01-01', values.time)) {
-    errors.time = 'La hora no es válida.';
+  } else if (!timeSlots('', now).includes(values.time)) {
+    errors.time = 'Selecciona una hora de la lista.';
   }
 
   if (!errors.date && !errors.time) {
