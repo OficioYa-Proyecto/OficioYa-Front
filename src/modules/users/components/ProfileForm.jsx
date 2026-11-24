@@ -99,7 +99,6 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
 
   const roles = perfil.roles ?? [];
   const esAdmin = roles.includes('ADMIN');
-  const esContratante = roles.includes('CONTRATANTE');
   // Sobre mi cuenta: con un solo rol se ofrece agregar el otro (RF-02); con ambos, pedir dejar cualquiera (RF-13).
   // Después de agregar uno no se muestran más opciones hasta volver a iniciar sesión
   const cambioHecho = rolAgregado !== null;
@@ -250,7 +249,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
     setGuardado(false);
     setGuardando(true);
     try {
-      await onGuardar({ name: name.trim(), localityId: esContratante && localityId ? Number(localityId) : undefined });
+      await onGuardar({ name: name.trim(), localityId: !esAdmin && localityId ? Number(localityId) : undefined });
       setNombreVisible(name.trim());
       await guardarTelefonos();
       if (photoFile && perfil?.id) {
@@ -429,8 +428,8 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
               {tocado && errorNombre && <p className={styles.fieldError}>{errorNombre}</p>}
             </div>
 
-            {/* RF-14. Solo el contratante tiene localidad; no se puede dejar vacía una vez elegida */}
-            {esContratante && (
+            {/* RF-14. El trabajador y el contratante tienen localidad; no se puede dejar vacía una vez elegida */}
+            {!esAdmin && (
                 <div className={styles.field}>
                   <label htmlFor="localityId" className={reg.label}>Tu localidad</label>
                   <select

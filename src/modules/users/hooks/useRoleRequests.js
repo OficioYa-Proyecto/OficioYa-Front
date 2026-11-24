@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ACCESS_TOKEN } from '../config';
 import {
   listarPeticionesRol,
   obtenerMisPeticionesRol,
@@ -13,14 +12,14 @@ export function useMisPeticionesRol() {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    obtenerMisPeticionesRol(ACCESS_TOKEN)
+    obtenerMisPeticionesRol()
       .then(setPeticiones)
       .catch(() => setPeticiones([]))
       .finally(() => setCargando(false));
   }, []);
 
   async function pedir(rol, razon) {
-    const nueva = await pedirQuitarRol(rol, razon, ACCESS_TOKEN);
+    const nueva = await pedirQuitarRol(rol, razon);
     setPeticiones((actuales) => [nueva, ...actuales]);
   }
 
@@ -37,7 +36,7 @@ export function usePeticionesRol({ status, userId } = {}) {
 
   useEffect(() => {
     let vigente = true;
-    listarPeticionesRol({ status, userId }, ACCESS_TOKEN)
+    listarPeticionesRol({ status, userId })
       .then((data) => {
         if (!vigente) return;
         setPeticiones(data);
@@ -54,7 +53,7 @@ export function usePeticionesRol({ status, userId } = {}) {
 
   // Lanza el error para que la tarjeta lo muestre; si se resolvió, sale del filtro de pendientes
   async function resolver(id, accion, motivo) {
-    const actualizada = await resolverPeticionRol(id, accion, motivo, ACCESS_TOKEN);
+    const actualizada = await resolverPeticionRol(id, accion, motivo);
     setPeticiones((actuales) => actuales
       .map((p) => (p.id === id ? actualizada : p))
       .filter((p) => !status || p.status === status));

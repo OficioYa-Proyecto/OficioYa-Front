@@ -18,18 +18,37 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
 }
 
-// Fecha máxima permitida para ser mayor de 18 años (hoy menos 18 años en formato AAAA-MM-DD)
+// Mismas reglas que valida el back para la fecha de nacimiento (RF-01)
+const EDAD_MINIMA = 18;
+const ANIO_MINIMO = 1900;
+
+// Fecha máxima permitida para ser mayor de edad (hoy menos EDAD_MINIMA años en formato AAAA-MM-DD)
 function getMaxAdultBirthDate() {
   const today = new Date();
-  const year = today.getFullYear() - 18;
+  const year = today.getFullYear() - EDAD_MINIMA;
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
-function isAdultBirthDate(dateStr) {
-  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-  return dateStr <= getMaxAdultBirthDate();
+// Mientras escribe deja solo números y pone las barras: "15051995" -> "15/05/1995"
+function formatBirthDateInput(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('/');
+}
+
+// "dd/mm/aaaa" -> "AAAA-MM-DD" (formato que recibe el back); null si la fecha no existe
+function toIsoDate(text) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+  if (!match) return null;
+  const [, day, month, year] = match.map(Number);
+  const date = new Date(year, month - 1, day);
+  if (year < ANIO_MINIMO || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function isAdultBirthDate(isoDate) {
+  return isoDate <= getMaxAdultBirthDate();
 }
 
 const ROLE_OPTIONS = [
@@ -134,14 +153,16 @@ export default function RegisterPage() {
 
   // Errores por campo: se muestran tras intentar enviar y se actualizan mientras el usuario corrige
   const REQUIRED_MSG = 'Este campo es obligatorio.';
-  const maxBirthDate = getMaxAdultBirthDate();
+  const isoBirthDate = toIsoDate(birthDate);
   const nameError = submitted && !name.trim() ? REQUIRED_MSG : null;
   const birthDateError =
     submitted && !birthDate
       ? REQUIRED_MSG
-      : (submitted || birthDateTouched) && birthDate && !isAdultBirthDate(birthDate)
-        ? 'Debes ser mayor de edad para registrarte.'
-        : null;
+      : (submitted || birthDateTouched) && birthDate && !isoBirthDate
+        ? 'Escribe una fecha válida en formato dd/mm/aaaa.'
+        : (submitted || birthDateTouched) && isoBirthDate && !isAdultBirthDate(isoBirthDate)
+          ? 'Debes ser mayor de edad para registrarte.'
+          : null;
   const emailError =
     submitted && !email.trim()
       ? REQUIRED_MSG
@@ -250,7 +271,10 @@ export default function RegisterPage() {
     if (!birthDate) {
       return 'La fecha de nacimiento es obligatoria.';
     }
-    if (!isAdultBirthDate(birthDate)) {
+    if (!isoBirthDate) {
+      return 'Escribe una fecha válida en formato dd/mm/aaaa.';
+    }
+    if (!isAdultBirthDate(isoBirthDate)) {
       return 'Debes ser mayor de edad para registrarte.';
     }
     if (!email.trim()) {
@@ -318,7 +342,7 @@ export default function RegisterPage() {
       name: name.trim(),
       email: email.trim(),
       password,
-      birthDate,
+      birthDate: isoBirthDate,
       localityId: localityId ? Number(localityId) : undefined,
       phones: phones.map((p) => ({
         number: p.number.trim(),
@@ -609,13 +633,12 @@ export default function RegisterPage() {
                 </label>
                 <input
                   id="birthDate"
-                  type="date"
-                  max={maxBirthDate}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd/mm/aaaa"
+                  maxLength={10}
                   value={birthDate}
-                  onChange={(e) => {
-                    setBirthDate(e.target.value);
-                    setBirthDateTouched(true);
-                  }}
+                  onChange={(e) => setBirthDate(formatBirthDateInput(e.target.value))}
                   onBlur={() => setBirthDateTouched(true)}
                   autoComplete="bday"
                   className={birthDateError ? styles.inputInvalid : undefined}

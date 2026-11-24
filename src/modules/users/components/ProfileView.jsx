@@ -108,7 +108,7 @@ function ProfileView() {
                     email={perfil.email}
                     phones={perfil.phones ?? []}
                     edad={perfil.birthDate ? calculateAge(perfil.birthDate) : null}
-                    localidad={roles.includes('CONTRATANTE') ? perfil.locality?.name : undefined}
+                    localidad={esAdmin ? undefined : perfil.locality?.name}
                     nota="Datos protegidos. Solo administración puede consultarlos completos."
                 />
               </aside>
