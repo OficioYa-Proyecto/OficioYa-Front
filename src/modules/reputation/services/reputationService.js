@@ -10,6 +10,17 @@ export function listarResenas(trabajadorId, token) {
   return request(`${BASE}/trabajadores/${trabajadorId}/resenas`, { token });
 }
 
+/** Perfil del trabajador en Worker (por el Orchestrator): trae el userId de su cuenta y su oficio principal. */
+export function obtenerPerfilWorker(trabajadorId, token) {
+  return request(`/workers/${trabajadorId}`, { token });
+}
+
+/** Datos públicos de cuentas en Users (nombre), por el Orchestrator. */
+export function obtenerUsuarios(userIds, token) {
+  const consulta = userIds.map((id) => `ids=${encodeURIComponent(id)}`).join('&');
+  return request(`/users?${consulta}`, { token });
+}
+
 export function calificar(solicitudId, puntuacion, comentario, token) {
   return request(`${BASE}/resenas`, {
     method: 'POST',

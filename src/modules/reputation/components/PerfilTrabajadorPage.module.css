@@ -64,6 +64,14 @@
   font-size: 0.85rem;
 }
 
+.contratar {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+}
+
 .aviso {
   margin: 0;
   padding: 14px;

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../core/design-system/Button';
 import { getToken } from '../../core/lib/session';
 import { DETAILS_FORM_ID, SENT_STEP, STEPS, WORKERS_FORM_ID } from '../config';
@@ -35,6 +35,8 @@ function CreateRequestPage() {
   const [token] = useState(() => getToken() ?? '');
   const navigate = useNavigate();
   const { workerId: preselectedWorkerId } = useParams();
+  // El perfil del trabajador (botón Contratar) envía su nombre y oficio; /workers no trae el nombre.
+  const { state: fromProfile } = useLocation();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(EMPTY_FORM);
   const [preselectedWorker, setPreselectedWorker] = useState(null);
@@ -47,13 +49,18 @@ function CreateRequestPage() {
   useEffect(() => {
     if (!preselectedWorkerId) return;
     workersService.lookup().then((ws) => {
-      const w = ws.find((x) => x.id === preselectedWorkerId);
+      const found = ws.find((x) => x.id === preselectedWorkerId);
+      const w = found && {
+        ...found,
+        name: fromProfile?.nombre || found.name,
+        trade: fromProfile?.oficio || found.trade,
+      };
       if (w) {
         setPreselectedWorker(w);
         setForm((current) => ({ ...current, workers: [w] }));
       }
     }).catch(() => {});
-  }, [preselectedWorkerId]);
+  }, [preselectedWorkerId, fromProfile?.nombre, fromProfile?.oficio]);
 
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = THEME;
