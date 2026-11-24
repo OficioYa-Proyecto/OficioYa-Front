@@ -124,6 +124,19 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
       ? Object.keys(ROLES_QUITABLES)
       : [];
   const ocupadoRol = rolGuardando !== null || enviandoPeticion;
+
+  function subtituloCuenta() {
+    if (rolesFaltantes.length > 0) {
+      return rolesFaltantes.includes('TRABAJADOR')
+          ? 'Usa tu misma cuenta para también ofrecer tus servicios. Tu información se conserva.'
+          : 'Usa tu misma cuenta para también contratar servicios. Tu información se conserva.';
+    }
+    if (rolesQuitables.length > 0) {
+      return 'Tienes los dos roles. Si quieres dejar uno, envía una solicitud con la razón para ser revisada.';
+    }
+    return 'Aquí ves el estado de tus roles en OficioYa.';
+  }
+
   const errorNombre = name.trim() === '' ? 'El nombre es obligatorio' : null;
   // RF-14. Las cuentas creadas antes de que la localidad fuera obligatoria deben elegirla para guardar
   const errorLocalidad = !esAdmin && !localityId ? 'La localidad es obligatoria' : null;
@@ -507,9 +520,9 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
                 <h2 className={reg.heroTitle}>
                   Sobre mi <span className={styles.resaltadoPeligro}>cuenta</span>
                 </h2>
-                <p className={reg.heroSub}>
-                  Elige si usas OficioYa para trabajar, para contratar o para ambas. Tu información no se borra y puedes cambiarlo después.
-                </p>
+                  <p className={reg.heroSub}>
+                    {subtituloCuenta()}
+                  </p>
               </div>
               <div className={`${reg.card} ${styles.cuentaLista}`}>
                 {rolesFaltantes.map((rol) => (
@@ -561,7 +574,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
                     <div className={vista.success}>
                       <span className={vista.successIcon}>⏳</span>
                       <p>
-                        <strong>Tu petición para dejar de ser {ROLES_QUITABLES[peticionPendiente.role].nombre} está en revisión.</strong>{' '}
+                        <strong>Tu solicitud para dejar de ser {ROLES_QUITABLES[peticionPendiente.role].nombre} está en revisión.</strong>{' '}
                         Un administrador la revisará; mientras tanto conservas tus roles.
                       </p>
                     </div>
@@ -569,7 +582,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
                 {ultimaPeticion?.status === 'REJECTED' && (
                     <div className={styles.cuentaError}>
                       <p>
-                        <strong>El administrador rechazó tu petición para dejar de ser {ROLES_QUITABLES[ultimaPeticion.role].nombre}.</strong>{' '}
+                        <strong>El administrador rechazó tu solicitud para dejar de ser {ROLES_QUITABLES[ultimaPeticion.role].nombre}.</strong>{' '}
                         Motivo: {ultimaPeticion.adminReason}
                       </p>
                     </div>
@@ -578,7 +591,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
                     <div className={vista.success}>
                       <span className={vista.successIcon}>✓</span>
                       <p>
-                        <strong>El administrador aprobó tu petición: ya no eres {ROLES_QUITABLES[ultimaPeticion.role].nombre}.</strong>{' '}
+                        <strong>El administrador aprobó tu solicitud: ya no eres {ROLES_QUITABLES[ultimaPeticion.role].nombre}.</strong>{' '}
                         Inicia sesión de nuevo para aplicar el cambio.
                       </p>
                       <Button type="button" onClick={() => navigate('/auth', { replace: true })}>Iniciar sesión</Button>
@@ -617,7 +630,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
                     Cancelar
                   </button>
                   <Button type="button" onClick={enviarPeticion} variant="danger" disabled={enviandoPeticion}>
-                    {enviandoPeticion ? 'Enviando...' : 'Enviar petición'}
+                    {enviandoPeticion ? 'Enviando...' : 'Enviar'}
                   </Button>
                 </div>
               </div>

@@ -34,18 +34,18 @@ export const ROLES_AGREGABLES = {
 export const ROLES_QUITABLES = {
   TRABAJADOR: {
     boton: 'Quiero dejar de ser trabajador',
-    descripcion: 'Envía una petición al administrador. Si la aprueba, tu perfil de trabajador se pausa y deja de aparecer en búsquedas.',
+    descripcion: 'Envía una solicitud al administrador. Si la aprueba, tu perfil de trabajador se pausa y deja de aparecer en búsquedas.',
     aviso: 'No puedes tener solicitudes activas como trabajador.',
     titulo: '¿Dejar de ser trabajador?',
-    texto: 'Cuéntanos por qué deseas dejar de ser trabajador, un administrador revisará tu petición.',
+    texto: 'Cuéntanos por qué deseas dejar de ser trabajador, un administrador revisará tu solicitud.',
     nombre: 'trabajador',
   },
   CONTRATANTE: {
     boton: 'Quiero dejar de ser contratante',
-    descripcion: 'Envía una petición al administrador. Si la aprueba, ya no podrás solicitar servicios con esta cuenta.',
+    descripcion: 'Envía una solicitud al administrador. Si la aprueba, ya no podrás solicitar servicios con esta cuenta.',
     aviso: 'No puedes tener solicitudes activas como contratante.',
     titulo: '¿Dejar de ser contratante?',
-    texto: 'Cuéntanos por qué deseas dejar de ser contratante, un administrador revisará tu petición.',
+    texto: 'Cuéntanos por qué deseas dejar de ser contratante, un administrador revisará tu solicitud.',
     nombre: 'contratante',
   },
 };
