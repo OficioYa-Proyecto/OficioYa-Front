@@ -43,11 +43,6 @@ function SentStep({ values, result }) {
           {workersText(result.sent)}.
         </p>
       )}
-      {result.photosWarning && (
-        <p role="alert" className={styles.notice}>
-          {result.photosWarning}
-        </p>
-      )}
     </div>
   );
 }
