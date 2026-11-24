@@ -65,6 +65,29 @@ function toWorker(raw) {
   };
 }
 
+function toZoneWorker(raw, index, zoneName) {
+  return {
+    id: raw.userId,
+    name: `Trabajador ${index + 1}`,
+    trade: raw.primaryTrade?.trade?.name || 'Oficio sin especificar',
+    zone: zoneName || '',
+    rate: formatLookupRate(raw.primaryTrade),
+    rating: null,
+    jobs: '',
+    availability: raw.availableNow ? 'Disponible ahora' : '',
+    photoUrl: raw.photos?.[0]?.url || '',
+  };
+}
+
+async function workersByZone(neighborhoodId, neighborhood) {
+  const zoneId = Number(neighborhoodId);
+  const all = await request('/workers');
+  return (all ?? [])
+    .filter((w) => w.userId && (Number.isNaN(zoneId) || (w.zoneIds ?? []).includes(zoneId)))
+    .slice(0, 20)
+    .map((w, index) => toZoneWorker(w, index, neighborhood));
+}
+
 function weekdayOf(date) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date ?? '');
   if (!match) return undefined;
@@ -80,7 +103,7 @@ export const workersService = {
   isMock: false,
   notice: '',
 
-  search: async ({ description, neighborhoodId, date, time }) => {
+  search: async ({ description, neighborhoodId, neighborhood, date, time }) => {
     const text = (description ?? '').trim().slice(0, MAX_TEXT);
     if (text.length < MIN_TEXT) {
       throw new Error('Describe un poco m\u00e1s el servicio para buscar trabajadores.');
@@ -90,15 +113,25 @@ export const workersService = {
       diaSemana: weekdayOf(date),
       hora: timeOf(time),
     };
-    return cachedSearch(JSON.stringify({ text, criterios }), async () => {
+    return cachedSearch(JSON.stringify({ text, criterios, neighborhood }), async () => {
       const response = await request('/search/lenguaje-natural', {
         method: 'POST',
         body: { texto: text, criterios },
       });
       const results = Array.isArray(response?.resultados) ? response.resultados : [];
       const workers = results.filter((item) => item.trabajadorId).map(toWorker);
-      const message = workers.length > 0 ? '' : response?.mensaje || '';
-      return { workers, message };
+      if (workers.length > 0) {
+        return { workers, message: '', fallback: false };
+      }
+      try {
+        const byZone = await workersByZone(neighborhoodId, neighborhood);
+        if (byZone.length > 0) {
+          return { workers: byZone, message: '', fallback: true };
+        }
+      } catch {
+        // Si el respaldo falla, conservamos el mensaje original del buscador.
+      }
+      return { workers: [], message: response?.mensaje || '', fallback: false };
     });
   },
 

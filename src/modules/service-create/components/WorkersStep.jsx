@@ -49,7 +49,7 @@ function ServiceMini({ values }) {
 }
 
 function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
-  const { status, workers, message: searchMessage, error, retry } = useWorkerSearch(values);
+  const { status, workers, message: searchMessage, error, fallback, retry } = useWorkerSearch(values);
   const [submitted, setSubmitted] = useState(false);
 
   const selectedIds = new Set(values.workers.map((w) => w.id));
@@ -77,6 +77,11 @@ function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
   return (
     <form id={WORKERS_FORM_ID} className={styles.form} onSubmit={handleSubmit} noValidate>
       {workersService.notice && <p className={styles.notice}>{workersService.notice}</p>}
+      {fallback && (
+        <p className={styles.notice}>
+          No identificamos el oficio en la descripción. Te mostramos trabajadores de {neighborhood}.
+        </p>
+      )}
 
       <div className={styles.heading}>
         <h2>Trabajadores cerca de {neighborhood}</h2>
