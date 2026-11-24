@@ -2,6 +2,7 @@ import { request } from '../../core/lib/httpClient';
 
 const MIN_TEXT = 3;
 const MAX_TEXT = 500;
+const SEARCH_TTL_MS = 60 * 1000;
 const DAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 const RATE_UNITS = {
@@ -9,6 +10,23 @@ const RATE_UNITS = {
   PER_JOB: 'por trabajo',
   PER_DAY: 'por d\u00eda',
 };
+
+const searchCache = new Map();
+
+function cachedSearch(key, run) {
+  const hit = searchCache.get(key);
+  if (hit && Date.now() - hit.at < SEARCH_TTL_MS) {
+    return hit.promise;
+  }
+  const promise = run();
+  searchCache.set(key, { at: Date.now(), promise });
+  promise.catch(() => {
+    if (searchCache.get(key)?.promise === promise) {
+      searchCache.delete(key);
+    }
+  });
+  return promise;
+}
 
 function money(value) {
   return `$${Number(value).toLocaleString('es-CO')}`;
@@ -72,14 +90,16 @@ export const workersService = {
       diaSemana: weekdayOf(date),
       hora: timeOf(time),
     };
-    const response = await request('/search/lenguaje-natural', {
-      method: 'POST',
-      body: { texto: text, criterios },
+    return cachedSearch(JSON.stringify({ text, criterios }), async () => {
+      const response = await request('/search/lenguaje-natural', {
+        method: 'POST',
+        body: { texto: text, criterios },
+      });
+      const results = Array.isArray(response?.resultados) ? response.resultados : [];
+      const workers = results.filter((item) => item.trabajadorId).map(toWorker);
+      const message = workers.length > 0 ? '' : response?.mensaje || '';
+      return { workers, message };
     });
-    const results = Array.isArray(response?.resultados) ? response.resultados : [];
-    const workers = results.filter((item) => item.trabajadorId).map(toWorker);
-    const message = workers.length > 0 ? '' : response?.mensaje || '';
-    return { workers, message };
   },
 
   lookup: async () => {

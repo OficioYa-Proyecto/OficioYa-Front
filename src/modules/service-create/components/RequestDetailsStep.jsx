@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import Button from '../../core/design-system/Button';
-import { DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import { ADDRESS_NOTE_MAX, DETAILS_FORM_ID, ROAD_TYPES } from '../config';
 import { useZones } from '../hooks/useZones';
 import {
   EMPTY_FORM,
   composeAddress,
   formatSlot,
   normalizeDigits,
+  normalizeNote,
   normalizeVia,
   timeSlots,
   todayISO,
@@ -82,7 +83,7 @@ function AddressFields({ values, onChange, error }) {
     <div className={styles.address}>
       <select
         className={styles.addressSelect}
-        {...fieldProps('field-exactAddress', error, { required: true, hint: true })}
+        {...fieldProps('field-exactAddress', error, { required: true })}
         value={address.roadType}
         onChange={(event) => update({ roadType: event.target.value })}
       >
@@ -98,7 +99,6 @@ function AddressFields({ values, onChange, error }) {
         type="text"
         autoComplete="off"
         maxLength={4}
-        placeholder="74"
         aria-label="Número o letra de la vía"
         aria-invalid={invalid}
         value={address.main}
@@ -112,7 +112,6 @@ function AddressFields({ values, onChange, error }) {
         type="text"
         autoComplete="off"
         maxLength={4}
-        placeholder="39"
         aria-label="Número después del numeral"
         aria-invalid={invalid}
         value={address.cross}
@@ -127,7 +126,6 @@ function AddressFields({ values, onChange, error }) {
         inputMode="numeric"
         autoComplete="off"
         maxLength={3}
-        placeholder="25"
         aria-label="Último número de la dirección"
         aria-invalid={invalid}
         value={address.number}
@@ -172,7 +170,6 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
           >
             <textarea
               rows={4}
-              placeholder="Ej: Necesito reparar una fuga debajo del lavaplatos."
               {...fieldProps('field-description', visible.description, { required: true })}
               {...bind('description')}
             />
@@ -223,10 +220,20 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
             id="field-exactAddress"
             label="Dirección exacta"
             required
-            hint="Ejemplo: Carrera 74 # 39-25"
             error={visible.exactAddress}
           >
             <AddressFields values={values} onChange={onChange} error={visible.exactAddress} />
+          </Field>
+
+          <Field id="field-addressNote" label="Información adicional">
+            <input
+              type="text"
+              autoComplete="off"
+              maxLength={ADDRESS_NOTE_MAX}
+              {...fieldProps('field-addressNote', '')}
+              value={values.addressNote ?? ''}
+              onChange={(event) => onChange({ addressNote: normalizeNote(event.target.value) })}
+            />
           </Field>
 
           <div className={`${styles.row} ${styles.rowEven}`}>
