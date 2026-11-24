@@ -1,4 +1,4 @@
-import { TIME_SLOTS } from './config';
+import { ADDRESS_NOTE_MAX, TIME_SLOTS } from './config';
 
 export const EMPTY_FORM = {
   description: '',
@@ -7,6 +7,7 @@ export const EMPTY_FORM = {
   neighborhoodId: '',
   address: { roadType: '', main: '', cross: '', number: '' },
   exactAddress: '',
+  addressNote: '',
   date: '',
   time: '',
   workers: [],
@@ -31,6 +32,14 @@ export function normalizeDigits(value) {
   return value.replace(/\D/g, '').slice(0, 3);
 }
 
+export function normalizeNote(value) {
+  return value.replace(/\s+/g, ' ').slice(0, ADDRESS_NOTE_MAX);
+}
+
+export function cleanNote(value) {
+  return (value ?? '').replace(/\s+/g, ' ').trim();
+}
+
 export function composeAddress({ roadType, main, cross, number }) {
   if (!roadType || !main || !cross || !number) {
     return '';
@@ -38,18 +47,24 @@ export function composeAddress({ roadType, main, cross, number }) {
   return `${roadType} ${main} # ${cross}-${number}`;
 }
 
+export function composeFullAddress(exactAddress, addressNote) {
+  const base = (exactAddress ?? '').trim();
+  const note = cleanNote(addressNote);
+  return note ? `${base}, ${note}` : base;
+}
+
 function validateAddress(address) {
   if (!address.roadType) {
     return 'Selecciona el tipo de vía.';
   }
   if (!VIA_PATTERN.test(address.main)) {
-    return 'Escribe el número de la vía, por ejemplo 74 o 5A.';
+    return 'Escribe el número de la vía.';
   }
   if (!VIA_PATTERN.test(address.cross)) {
-    return 'Escribe el número después del #, por ejemplo 39 o 39B.';
+    return 'Escribe el número después del #.';
   }
   if (!NUMBER_PATTERN.test(address.number)) {
-    return 'Escribe el último número, por ejemplo 25.';
+    return 'Escribe el último número de la dirección.';
   }
   return '';
 }

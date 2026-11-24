@@ -1,9 +1,10 @@
 import { useLayoutEffect, useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../core/design-system/Button';
 import { getToken } from '../../core/lib/session';
 import { DETAILS_FORM_ID, SENT_STEP, STEPS, WORKERS_FORM_ID } from '../config';
 import { useCreateRequest } from '../hooks/useCreateRequest';
+import { warmWorkerIds } from '../hooks/useWorkerPhoto';
 import { EMPTY_FORM } from '../requestForm';
 import { workersService } from '../services/workersService';
 import '../theme.css';
@@ -19,6 +20,12 @@ const REVIEW = STEPS.length;
 const SENT = STEPS.length + 1;
 const THEME = 'naranja';
 const STEP_FORMS = { 1: DETAILS_FORM_ID, 2: WORKERS_FORM_ID };
+const SENT_ACTIONS_STYLE = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '12px',
+  justifyContent: 'flex-end',
+};
 
 function sendLabel(count) {
   return count === 1 ? 'Enviar al trabajador' : `Enviar a ${count} trabajadores`;
@@ -26,11 +33,16 @@ function sendLabel(count) {
 
 function CreateRequestPage() {
   const [token] = useState(() => getToken() ?? '');
+  const navigate = useNavigate();
   const { workerId: preselectedWorkerId } = useParams();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(EMPTY_FORM);
   const [preselectedWorker, setPreselectedWorker] = useState(null);
   const { sending, error: sendError, result, send, reset } = useCreateRequest(token);
+
+  useEffect(() => {
+    warmWorkerIds();
+  }, []);
 
   useEffect(() => {
     if (!preselectedWorkerId) return;
@@ -49,7 +61,6 @@ function CreateRequestPage() {
       delete document.documentElement.dataset.theme;
     };
   }, []);
-
 
   const meta = step === SENT ? SENT_STEP : STEPS[step - 1];
   const canGoBack = step > 1 && step < SENT && !sending;
@@ -126,9 +137,15 @@ function CreateRequestPage() {
 
       <footer className={styles.footer}>
         {step === SENT ? (
-          <Button variant="secondary" onClick={restart}>
-            {meta.cta}
-          </Button>
+          <div style={SENT_ACTIONS_STYLE}>
+            <Button variant="secondary" onClick={restart}>
+              {meta.cta}
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/')}>
+              Ir a inicio
+            </Button>
+            <Button onClick={() => navigate('/solicitudes')}>Ver mis solicitudes</Button>
+          </div>
         ) : (
           <Button {...primaryAction}>
             {primaryLabel}
