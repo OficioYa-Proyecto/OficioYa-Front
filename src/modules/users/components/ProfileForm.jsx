@@ -120,6 +120,8 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
       : [];
   const ocupadoRol = rolGuardando !== null || enviandoPeticion;
   const errorNombre = name.trim() === '' ? 'El nombre es obligatorio' : null;
+  // RF-14. Las cuentas creadas antes de que la localidad fuera obligatoria deben elegirla para guardar
+  const errorLocalidad = !esAdmin && !localityId ? 'La localidad es obligatoria' : null;
   const erroresTelefono = phones.map((phone, idx) => {
     if (!enviado) return null;
     const numero = phone.number.trim();
@@ -239,7 +241,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
       const numero = phone.number.trim();
       return !/^3\d{9}$/.test(numero) || phones.slice(0, idx).some((otro) => otro.number.trim() === numero);
     });
-    if (errorNombre || hayErrorTelefono) {
+    if (errorNombre || errorLocalidad || hayErrorTelefono) {
       setTimeout(() => {
         document.querySelector('[aria-invalid="true"]')?.focus();
       }, 0);
@@ -249,7 +251,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
     setGuardado(false);
     setGuardando(true);
     try {
-      await onGuardar({ name: name.trim(), localityId: !esAdmin && localityId ? Number(localityId) : undefined });
+      await onGuardar({ name: name.trim(), localityId: esAdmin ? undefined : Number(localityId) });
       setNombreVisible(name.trim());
       await guardarTelefonos();
       if (photoFile && perfil?.id) {
@@ -428,24 +430,31 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
               {tocado && errorNombre && <p className={styles.fieldError}>{errorNombre}</p>}
             </div>
 
-            {/* RF-14. El trabajador y el contratante tienen localidad; no se puede dejar vacía una vez elegida */}
+            {/* RF-14. El trabajador y el contratante deben tener localidad */}
             {!esAdmin && (
                 <div className={styles.field}>
-                  <label htmlFor="localityId" className={reg.label}>Tu localidad</label>
+                  <label htmlFor="localityId" className={reg.label}>
+                    <span>
+                      Tu localidad <span className={reg.required}>*</span>
+                    </span>
+                  </label>
                   <select
                       id="localityId"
-                      className={reg.select}
+                      className={`${reg.select} ${tocado && errorLocalidad ? reg.inputInvalid : ''}`}
                       value={localityId}
                       onChange={(e) => {
                         setLocalityId(e.target.value);
                         setGuardado(false);
                       }}
+                      aria-invalid={Boolean(tocado && errorLocalidad)}
+                      required
                   >
-                    <option value="" disabled={Boolean(perfil.locality)}>Selecciona una localidad</option>
+                    <option value="" disabled>Selecciona una localidad</option>
                     {localidades.map((localidad) => (
                         <option key={localidad.id} value={localidad.id}>{localidad.name}</option>
                     ))}
                   </select>
+                  {tocado && errorLocalidad && <p className={styles.fieldError}>{errorLocalidad}</p>}
                 </div>
             )}
           </form>

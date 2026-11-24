@@ -155,6 +155,7 @@ export default function RegisterPage() {
   const REQUIRED_MSG = 'Este campo es obligatorio.';
   const isoBirthDate = toIsoDate(birthDate);
   const nameError = submitted && !name.trim() ? REQUIRED_MSG : null;
+  const localityError = submitted && !localityId ? REQUIRED_MSG : null;
   const birthDateError =
     submitted && !birthDate
       ? REQUIRED_MSG
@@ -277,6 +278,9 @@ export default function RegisterPage() {
     if (!isAdultBirthDate(isoBirthDate)) {
       return 'Debes ser mayor de edad para registrarte.';
     }
+    if (!localityId) {
+      return 'La localidad es obligatoria.';
+    }
     if (!email.trim()) {
       return 'El correo electrónico es obligatorio.';
     }
@@ -343,7 +347,7 @@ export default function RegisterPage() {
       email: email.trim(),
       password,
       birthDate: isoBirthDate,
-      localityId: localityId ? Number(localityId) : undefined,
+      localityId: Number(localityId),
       phones: phones.map((p) => ({
         number: p.number.trim(),
         principal: Boolean(p.principal),
@@ -653,15 +657,32 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* RF-14. Localidad opcional; se puede cambiar después en Editar perfil */}
+              {/* RF-14. Localidad obligatoria; se puede cambiar después en Editar perfil */}
               <div className={`${styles.formGroup} ${styles.gridFull}`}>
-                <label className={styles.label} htmlFor="localityId">Tu localidad</label>
-                <select id="localityId" className={styles.select} value={localityId} onChange={(e) => setLocalityId(e.target.value)}>
-                  <option value="">Selecciona una localidad</option>
+                <label className={styles.label} htmlFor="localityId">
+                  <span>
+                    Tu localidad <span className={styles.required}>*</span>
+                  </span>
+                </label>
+                <select
+                  id="localityId"
+                  className={`${styles.select} ${localityError ? styles.inputInvalid : ''}`}
+                  value={localityId}
+                  onChange={(e) => setLocalityId(e.target.value)}
+                  aria-invalid={Boolean(localityError)}
+                  aria-describedby={localityError ? 'locality-error' : undefined}
+                  required
+                >
+                  <option value="" disabled>Selecciona una localidad</option>
                   {localidades.map((localidad) => (
                     <option key={localidad.id} value={localidad.id}>{localidad.name}</option>
                   ))}
                 </select>
+                {localityError && (
+                  <span id="locality-error" className={styles.fieldError} role="alert">
+                    {localityError}
+                  </span>
+                )}
               </div>
             </div>
 
