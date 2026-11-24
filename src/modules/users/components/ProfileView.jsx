@@ -62,7 +62,7 @@ function ProfileView() {
               userId={perfil.id}
           />
           {esPropio && (
-              <div className={styles.actions}>
+              <div className={`${styles.actions} ${styles.profileActions}`}>
                 {rolesFaltantes.map((rol) => (
                     <Button
                         key={rol}

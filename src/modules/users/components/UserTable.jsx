@@ -213,19 +213,14 @@ function porcentaje(parte, total) {
     return total === 0 ? '0 %' : `${Math.round((parte * 100) / total)} %`;
 }
 
+// Mismo formato que el back: primera y última letra antes de la @ (carlos@gmail.com -> c**s@gmail.com)
 function enmascararCorreo(correo) {
     if (!correo) return '';
     const idx = correo.indexOf('@');
-    if (idx <= 0) return '*****';
+    if (idx <= 0) return correo;
     const usuario = correo.slice(0, idx);
-    const dominio = correo.slice(idx);
-    if (usuario.length <= 2) {
-        return usuario[0] + '***' + dominio;
-    }
-    if (usuario.length <= 4) {
-        return usuario.slice(0, 2) + '***' + dominio;
-    }
-    return usuario.slice(0, 2) + '***' + usuario.slice(-1) + dominio;
+    const ultima = usuario.length > 1 ? usuario.slice(-1) : '';
+    return usuario[0] + '**' + ultima + correo.slice(idx);
 }
 
 export default UserTable;

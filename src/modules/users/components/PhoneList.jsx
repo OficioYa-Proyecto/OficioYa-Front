@@ -29,7 +29,7 @@ function PhoneList({ phones, errores, onChange }) {
   }
 
   return (
-    <div>
+    <div className={reg.phoneFixed}>
       <div className={reg.phoneHeader}>
         <span className={reg.label}>
           <span>
@@ -63,33 +63,35 @@ function PhoneList({ phones, errores, onChange }) {
               />
             </div>
 
-            {phones.length > 1 && (
-              <label className={reg.phonePrincipalLabel} title="Marcar como teléfono principal">
-                <input
-                  type="radio"
-                  name="principalPhone"
-                  checked={phone.principal}
-                  onChange={() => marcarPrincipal(idx)}
-                  className={reg.phoneRadio}
-                />
-                <span>Principal</span>
-              </label>
-            )}
+            {/* Con un solo teléfono "Principal" y quitar se ven deshabilitados: ya es el principal y no se puede quitar */}
+            <label
+              className={`${reg.phonePrincipalLabel} ${phones.length === 1 ? reg.phoneControlDisabled : ''}`}
+              title="Marcar como teléfono principal"
+            >
+              <input
+                type="radio"
+                name="principalPhone"
+                checked={phone.principal}
+                onChange={() => marcarPrincipal(idx)}
+                disabled={phones.length === 1}
+                className={reg.phoneRadio}
+              />
+              <span>Principal</span>
+            </label>
 
-            {phones.length > 1 && (
-              <button
-                type="button"
-                className={reg.removePhoneBtn}
-                onClick={() => quitar(idx)}
-                aria-label={`Eliminar teléfono ${idx + 1}`}
-                title="Eliminar teléfono"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
+            <button
+              type="button"
+              className={reg.removePhoneBtn}
+              onClick={() => quitar(idx)}
+              disabled={phones.length === 1}
+              aria-label={`Eliminar teléfono ${idx + 1}`}
+              title="Eliminar teléfono"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
           {errores[idx] && (
             <span className={`${reg.fieldError} ${reg.phoneError}`}>{errores[idx]}</span>
