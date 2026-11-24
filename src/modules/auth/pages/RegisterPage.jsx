@@ -27,9 +27,44 @@ function getMaxAdultBirthDate() {
   return `${year}-${month}-${day}`;
 }
 
-function isAdultBirthDate(dateStr) {
-  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-  return dateStr <= getMaxAdultBirthDate();
+// Formato colombiano DD/MM/AAAA <-> AAAA-MM-DD (ISO)
+function formatToColDate(raw) {
+  const digits = (raw || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function colDateToIso(colDate) {
+  if (!colDate) return '';
+  const parts = colDate.split('/');
+  if (parts.length !== 3) return '';
+  const [dia, mes, anio] = parts;
+  if (!dia || !mes || !anio || dia.length !== 2 || mes.length !== 2 || anio.length !== 4) return '';
+  return `${anio}-${mes}-${dia}`;
+}
+
+function isoToColDate(isoDate) {
+  if (!isoDate) return '';
+  const parts = isoDate.split('-');
+  if (parts.length !== 3) return '';
+  const [anio, mes, dia] = parts;
+  return `${dia}/${mes}/${anio}`;
+}
+
+function isValidColDate(colDate) {
+  if (!colDate || !/^\d{2}\/\d{2}\/\d{4}$/.test(colDate)) return false;
+  const [d, m, y] = colDate.split('/').map(Number);
+  if (y < 1900 || y > new Date().getFullYear()) return false;
+  if (m < 1 || m > 12) return false;
+  const daysInMonth = new Date(y, m, 0).getDate();
+  return d >= 1 && d <= daysInMonth;
+}
+
+function isAdultColDate(colDate) {
+  if (!isValidColDate(colDate)) return false;
+  const iso = colDateToIso(colDate);
+  return iso <= getMaxAdultBirthDate();
 }
 
 const ROLE_OPTIONS = [
@@ -128,6 +163,7 @@ export default function RegisterPage() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const fileInputRef = useRef(null);
+  const datePickerRef = useRef(null);
 
   // El correo se valida al salir del campo; si ya se mostró el error, se revalida mientras corrige
   const emailInvalid = emailTouched && email.trim() !== '' && !validateEmail(email);
@@ -139,9 +175,11 @@ export default function RegisterPage() {
   const birthDateError =
     submitted && !birthDate
       ? REQUIRED_MSG
-      : (submitted || birthDateTouched) && birthDate && !isAdultBirthDate(birthDate)
-        ? 'Debes ser mayor de edad para registrarte.'
-        : null;
+      : (submitted || birthDateTouched) && birthDate && !isValidColDate(birthDate)
+        ? 'Ingresa una fecha válida en formato dd/mm/aaaa.'
+        : (submitted || birthDateTouched) && birthDate && !isAdultColDate(birthDate)
+          ? 'Debes ser mayor de edad para registrarte.'
+          : null;
   const emailError =
     submitted && !email.trim()
       ? REQUIRED_MSG
@@ -242,15 +280,40 @@ export default function RegisterPage() {
     });
   };
 
+  const handleBirthDateChange = (e) => {
+    const val = e.target.value;
+    if (val.length < birthDate.length && (val.endsWith('/') || (birthDate.endsWith('/') && val.length === birthDate.length - 1))) {
+      setBirthDate(val.replace(/\/$/, ''));
+      setBirthDateTouched(true);
+      return;
+    }
+    const formatted = formatToColDate(val);
+    setBirthDate(formatted);
+    setBirthDateTouched(true);
+  };
+
+  const handleCalendarClick = () => {
+    if (datePickerRef.current) {
+      if (typeof datePickerRef.current.showPicker === 'function') {
+        datePickerRef.current.showPicker();
+      } else {
+        datePickerRef.current.focus();
+      }
+    }
+  };
+
   // Validaciones antes de enviar
   const validateForm = () => {
     if (!name.trim()) {
       return 'El nombre completo es obligatorio.';
     }
-    if (!birthDate) {
+    if (!birthDate.trim()) {
       return 'La fecha de nacimiento es obligatoria.';
     }
-    if (!isAdultBirthDate(birthDate)) {
+    if (!isValidColDate(birthDate)) {
+      return 'Ingresa una fecha de nacimiento válida en formato dd/mm/aaaa.';
+    }
+    if (!isAdultColDate(birthDate)) {
       return 'Debes ser mayor de edad para registrarte.';
     }
     if (!email.trim()) {
@@ -318,7 +381,7 @@ export default function RegisterPage() {
       name: name.trim(),
       email: email.trim(),
       password,
-      birthDate,
+      birthDate: colDateToIso(birthDate),
       localityId: localityId ? Number(localityId) : undefined,
       phones: phones.map((p) => ({
         number: p.number.trim(),
@@ -607,22 +670,60 @@ export default function RegisterPage() {
                     Fecha de nacimiento <span className={styles.required}>*</span>
                   </span>
                 </label>
-                <input
-                  id="birthDate"
-                  type="date"
-                  max={maxBirthDate}
-                  value={birthDate}
-                  onChange={(e) => {
-                    setBirthDate(e.target.value);
-                    setBirthDateTouched(true);
-                  }}
-                  onBlur={() => setBirthDateTouched(true)}
-                  autoComplete="bday"
-                  className={birthDateError ? styles.inputInvalid : undefined}
-                  aria-invalid={Boolean(birthDateError)}
-                  aria-describedby={birthDateError ? 'birthdate-error' : undefined}
-                  required
-                />
+                <div className={styles.dateInputWrap}>
+                  <input
+                    id="birthDate"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd/mm/aaaa"
+                    maxLength={10}
+                    value={birthDate}
+                    onChange={handleBirthDateChange}
+                    onBlur={() => setBirthDateTouched(true)}
+                    autoComplete="bday"
+                    className={birthDateError ? styles.inputInvalid : undefined}
+                    aria-invalid={Boolean(birthDateError)}
+                    aria-describedby={birthDateError ? 'birthdate-error' : undefined}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={styles.calendarBtn}
+                    onClick={handleCalendarClick}
+                    aria-label="Abrir calendario para seleccionar fecha de nacimiento"
+                    tabIndex={-1}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </button>
+                  <input
+                    ref={datePickerRef}
+                    type="date"
+                    max={maxBirthDate}
+                    className={styles.hiddenDatePicker}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setBirthDate(isoToColDate(e.target.value));
+                        setBirthDateTouched(true);
+                      }
+                    }}
+                  />
+                </div>
                 {birthDateError && (
                   <span id="birthdate-error" className={styles.fieldError} role="alert">
                     {birthDateError}
