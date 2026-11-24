@@ -21,7 +21,7 @@ function BusquedaPage() {
     evento.preventDefault();
     const descripcion = borrador.trim();
     if (descripcion.length < LARGO_MINIMO) {
-      setAviso(`Describe el servicio con al menos ${LARGO_MINIMO} caracteres.`);
+      setAviso(`Escribe un servicio o un nombre con al menos ${LARGO_MINIMO} caracteres.`);
       return;
     }
     setAviso(null);
@@ -54,10 +54,10 @@ function BusquedaPage() {
       <form className={styles.buscador} onSubmit={enviar}>
         <input
           id="texto-busqueda"
-          aria-label="Describe lo que necesitas"
+          aria-label="Busca un servicio o a un profesional por su nombre"
           maxLength={LARGO_MAXIMO}
           onChange={(evento) => setBorrador(evento.target.value)}
-          placeholder="¿Qué servicio necesita hoy?"
+          placeholder="¿Qué servicio necesita hoy? / ¿A quién le gustaría contratar hoy?"
           value={borrador}
         />
         <Button type="submit">Buscar</Button>
@@ -124,9 +124,13 @@ function ListaResultados({ busqueda }) {
   }
 
   const oficio = oficios.find((item) => item.id === oficioId)?.nombre;
-  const titulo = texto === null
-    ? `Profesionales de ${oficio}`
-    : `Sugerencias de ${resultado.oficioIdentificado}`;
+  // Si el texto coincidió con el nombre de un trabajador, Search responde tipo NOMBRE.
+  let titulo = `Sugerencias de ${resultado.oficioIdentificado}`;
+  if (texto === null) {
+    titulo = `Profesionales de ${oficio}`;
+  } else if (resultado.tipo === 'NOMBRE') {
+    titulo = `Profesionales con el nombre “${texto}”`;
+  }
 
   return (
     <>
