@@ -42,6 +42,7 @@ function formatLookupRate(primaryTrade) {
 function toLookupWorker(raw, index) {
   return {
     id: raw.userId,
+    userId: raw.userId,
     name: `Trabajador ${index + 1}`,
     trade: raw.primaryTrade?.trade?.name || 'Oficio sin especificar',
     rate: formatLookupRate(raw.primaryTrade),

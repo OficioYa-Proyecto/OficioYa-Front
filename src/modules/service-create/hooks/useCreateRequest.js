@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { buildCreateRequestPayload } from '../requestPayload';
+import { resolveUserIds } from './useWorkerPhoto';
 import { createRequestService, describeSendError } from '../services/createRequestService';
 import { imagesService } from '../services/imagesService';
 
@@ -29,7 +30,11 @@ export function useCreateRequest(token) {
       inFlight.current = true;
       setState({ sending: true, error: '', result: null });
       try {
-        const created = await createRequestService.create(buildCreateRequestPayload(values), token);
+        const workersId = await resolveUserIds(values.workers);
+        const created = await createRequestService.create(
+          buildCreateRequestPayload(values, workersId),
+          token,
+        );
         const photosWarning = await attachPhotos(values.photos, created.rootId, token);
         setState({ sending: false, error: '', result: { ...created, photosWarning } });
         return true;

@@ -41,6 +41,18 @@ async function resolveUserId(profileId) {
   return profile?.userId ?? null;
 }
 
+export async function resolveUserIds(workers) {
+  const ids = await Promise.all(
+    workers.map((worker) =>
+      worker.userId ? worker.userId : resolveUserId(worker.id).catch(() => null),
+    ),
+  );
+  if (ids.some((id) => !id)) {
+    throw new Error('No pudimos identificar a uno de los trabajadores. Inténtalo de nuevo.');
+  }
+  return ids;
+}
+
 function loadPhoto(profileId) {
   if (!photoCache.has(profileId)) {
     const pending = resolveUserId(profileId)

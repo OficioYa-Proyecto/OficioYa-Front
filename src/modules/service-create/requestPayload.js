@@ -1,8 +1,8 @@
 import { composeFullAddress } from './requestForm';
 
-export function buildCreateRequestPayload(values) {
+export function buildCreateRequestPayload(values, workersId) {
   return {
-    workersId: values.workers.map((worker) => worker.id),
+    workersId: workersId ?? values.workers.map((worker) => worker.id),
     description: values.description.trim(),
     neighborhood: values.neighborhood.trim(),
     exactAddress: composeFullAddress(values.exactAddress, values.addressNote),
