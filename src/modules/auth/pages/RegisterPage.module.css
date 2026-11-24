@@ -1,19 +1,24 @@
 .page {
   min-height: calc(100vh - 65px);
-  padding: 56px 24px 60px;
+  padding: 32px 40px 48px;
   background:
           radial-gradient(circle at 92% 8%, rgba(235, 160, 120, 0.28) 0%, rgba(235, 160, 120, 0) 45%),
           linear-gradient(180deg, #fffcf7 0%, #fdf4ec 100%);
 }
 
-.container {
-  max-width: 880px;
-  margin: 0 auto;
+/* En computador: presentación arriba; paso 1 a la izquierda y pasos 2 a 4 a la derecha,
+   todo centrado en la pantalla. Cada tarjeta tiene su propia altura */
+.layout {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 880px);
+  justify-content: center;
+  gap: 24px 32px;
+  align-items: start;
 }
 
 .hero {
+  grid-column: 1 / -1;
   text-align: left;
-  margin-bottom: 28px;
 }
 
 .eyebrow {
@@ -30,12 +35,16 @@
 }
 
 .heroTitle {
-  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  font-size: clamp(2.2rem, 3.4vw, 3rem);
   font-weight: 800;
   letter-spacing: -0.05em;
   line-height: 1.05;
   color: var(--color-text);
   margin: 0 0 18px;
+}
+
+.hero .heroTitle {
+  margin-bottom: 10px;
 }
 
 .brandHighlight {
@@ -57,7 +66,11 @@
   border: 1px solid #eadfd4;
   border-radius: 32px;
   box-shadow: 0 12px 34px rgba(36, 49, 45, 0.05);
-  padding: 36px 36px 40px;
+  padding: 32px 40px 36px;
+}
+
+.roleCardBox {
+  padding: 28px 24px;
 }
 
 @media (max-width: 640px) {
@@ -93,7 +106,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin: 16px 0 18px;
+  margin: 0 0 18px;
 }
 
 .sectionHeader .sectionTitle {
@@ -128,25 +141,16 @@
 /* Role Cards Grid (3 options) */
 .roleGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 28px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #ecd9c8;
-}
-
-@media (max-width: 768px) {
-  .roleGrid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: 1fr;
+  gap: 14px;
 }
 
 .roleCard {
   display: grid;
-  grid-template-columns: 46px 1fr 20px;
+  grid-template-columns: 46px 1fr;
   grid-template-areas:
-    'icon title radio'
-    'icon desc  .';
+    'icon title'
+    'icon desc';
   column-gap: 14px;
   row-gap: 8px;
   align-items: start;
@@ -176,10 +180,6 @@
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
-.roleCardTop {
-  display: contents;
-}
-
 .roleIconWrap {
   grid-area: icon;
   width: 46px;
@@ -198,27 +198,10 @@
   border-color: #e3c9b8;
 }
 
-.radioIndicator {
-  grid-area: radio;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid #d8cdc1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-}
-
-.radioIndicatorActive {
+/* La opción elegida conserva su borde aunque el cursor esté encima */
+.roleCardActive:hover {
   border-color: var(--color-primary);
-}
-
-.radioDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 8px 18px rgba(36, 49, 45, 0.08);
 }
 
 .roleCardTitle {
@@ -288,9 +271,94 @@
   margin-bottom: 20px;
 }
 
+/* Ocupa todo el ancho de la grilla (nombre y teléfonos en el paso 3) */
+.spanAll {
+  grid-column: 1 / -1;
+}
+
+/* Teléfonos (registro y edición de perfil): número, "Principal" y quitar; el error queda debajo del número.
+   Los tres controles siempre están, así que el número mide lo mismo con 1, 2 o 3 teléfonos */
+.phoneFixed .phoneItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 12px;
+  align-items: center;
+}
+
+.phoneFixed .phoneRow {
+  display: contents;
+}
+
+.phoneFixed .phoneInputWrap {
+  grid-column: 1;
+}
+
+.phoneFixed .phonePrincipalLabel {
+  grid-column: 2;
+}
+
+.phoneFixed .removePhoneBtn {
+  grid-column: 3;
+}
+
+.phoneFixed .phoneError {
+  grid-column: 1;
+}
+
+/* Con un solo teléfono: visibles pero medio transparentes y sin poder usarse */
+.phoneFixed .removePhoneBtn:disabled,
+.phoneFixed .phoneControlDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.phoneFixed .removePhoneBtn:disabled:hover {
+  background: none;
+}
+
+.phoneFixed .phoneControlDisabled input {
+  cursor: not-allowed;
+}
+
+/* En el registro el número tiene el mismo ancho que la fecha de nacimiento */
+.phoneBlock .phoneItem {
+  grid-template-columns: calc((100% - 20px) / 2) auto auto;
+  justify-content: start;
+}
+
+.phoneBlock .phoneSection {
+  margin-bottom: 0;
+}
+
+/* Pantallas medianas: todo en una sola columna, con el paso 1 arriba */
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 880px);
+  }
+
+  .roleGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+}
+
+@media (max-width: 768px) {
+  .roleGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
+  .page {
+    padding: 24px 16px 40px;
+  }
+
   .gridTwo {
     grid-template-columns: 1fr;
+  }
+
+  .phoneBlock .phoneItem {
+    grid-template-columns: minmax(0, 1fr) auto auto;
   }
 }
 
@@ -406,46 +474,45 @@
   padding-right: 44px;
 }
 
-.dateInputWrap {
+/* Fecha de nacimiento: botón de calendario dentro del campo */
+.dateWrap {
   position: relative;
-  width: 100%;
 }
 
-.dateInputWrap input {
-  padding-right: 44px;
+.dateWrap input[type='text'] {
+  width: 100%;
+  padding-right: 48px;
 }
 
 .calendarBtn {
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 0;
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease;
 }
 
 .calendarBtn:hover {
   color: var(--color-primary);
 }
 
-.hiddenDatePicker {
+/* Calendario del navegador: invisible, solo se abre con el botón */
+.datePicker {
   position: absolute;
-  top: 0;
   left: 0;
-  width: 0;
+  bottom: 0;
+  width: 100%;
   height: 0;
+  padding: 0;
+  border: 0;
   opacity: 0;
   pointer-events: none;
-  border: none;
-  padding: 0;
-  margin: 0;
 }
 
 .eyeBtn {
@@ -467,11 +534,12 @@
   position: relative;
 }
 
+/* Globo debajo del campo, para no salirse de la pantalla en la columna derecha */
 .passHint {
   position: absolute;
-  top: 28px;
-  left: calc(100% + 14px);
-  width: 230px;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
   z-index: 5;
   background: #fff;
   border: 1px solid var(--color-border);
@@ -486,13 +554,13 @@
 .passHint::before {
   content: '';
   position: absolute;
-  top: 16px;
-  left: -6px;
+  top: -6px;
+  left: 24px;
   width: 10px;
   height: 10px;
   background: #fff;
   border-left: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   transform: rotate(45deg);
 }
 
@@ -508,20 +576,6 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-/* Si no hay espacio a un lado, el globo baja debajo del campo */
-@media (max-width: 1200px) {
-  .passHint {
-    position: static;
-    width: auto;
-    margin-top: 6px;
-    box-shadow: none;
-  }
-
-  .passHint::before {
-    display: none;
-  }
 }
 
 /* Photo profile section */
@@ -741,10 +795,6 @@
 .select:focus {
   border-color: var(--color-primary);
   outline: none;
-}
-
-.gridFull {
-  grid-column: 1 / -1;
 }
 
 .phoneSection {

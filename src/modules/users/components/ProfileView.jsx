@@ -48,8 +48,6 @@ function ProfileView() {
   const rolesFaltantes = esPropio && !esAdmin
       ? Object.keys(ROLES_AGREGABLES).filter((r) => !roles.includes(r))
       : [];
-  // El perfil público solo devuelve cuentas activas
-  const activo = !esPropio || perfil.accountStatus === 'ACTIVE';
 
   return (
       <section className={styles.page}>
@@ -57,12 +55,11 @@ function ProfileView() {
           <ProfileHeader
               nombre={perfil.name}
               roles={roles}
-              activo={activo}
               esPropio={esPropio}
               userId={perfil.id}
           />
           {esPropio && (
-              <div className={styles.actions}>
+              <div className={`${styles.actions} ${styles.profileActions}`}>
                 {rolesFaltantes.map((rol) => (
                     <Button
                         key={rol}
@@ -108,7 +105,7 @@ function ProfileView() {
                     email={perfil.email}
                     phones={perfil.phones ?? []}
                     edad={perfil.birthDate ? calculateAge(perfil.birthDate) : null}
-                    localidad={roles.includes('CONTRATANTE') ? perfil.locality?.name : undefined}
+                    localidad={esAdmin ? undefined : perfil.locality?.name}
                     nota="Datos protegidos. Solo administración puede consultarlos completos."
                 />
               </aside>

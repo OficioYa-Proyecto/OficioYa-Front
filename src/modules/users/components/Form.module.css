@@ -71,6 +71,24 @@
   gap: 6px;
 }
 
+/* Nombre y localidad en una misma fila */
+.formDosColumnas {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .formDosColumnas {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Línea que separa "Datos personales" de "Datos sensibles" (igual a la del registro) */
+.separado {
+  border-top: 1px solid #ecd9c8;
+  padding-top: 24px;
+}
+
 .label {
   display: block;
   font-weight: 700;
