@@ -30,7 +30,7 @@
     gap: 10px;
 }
 
-/* Botones de /users/me ("Quiero ser...", "Editar perfil") un poco más pequeños que el botón general */
+/* Botones de /users/me ("Quiero ser...", "Editar perfil") y "Volver al listado" del admin, un poco más pequeños que el botón general */
 .profileActions button {
     padding: 9px 18px;
     font-size: 0.875rem;

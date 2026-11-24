@@ -48,8 +48,6 @@ function ProfileView() {
   const rolesFaltantes = esPropio && !esAdmin
       ? Object.keys(ROLES_AGREGABLES).filter((r) => !roles.includes(r))
       : [];
-  // El perfil público solo devuelve cuentas activas
-  const activo = !esPropio || perfil.accountStatus === 'ACTIVE';
 
   return (
       <section className={styles.page}>
@@ -57,7 +55,6 @@ function ProfileView() {
           <ProfileHeader
               nombre={perfil.name}
               roles={roles}
-              activo={activo}
               esPropio={esPropio}
               userId={perfil.id}
           />

@@ -1,4 +1,14 @@
-/* Tarjetas de resumen: total, activas e inactivas */
+/* Título con la descripción justo debajo */
+.intro h1 {
+  margin-bottom: 4px;
+}
+
+.intro p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* Tarjetas de resumen: total, activas e inactivas (con barra de proporción) */
 .summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -6,33 +16,73 @@
 }
 
 .summaryCard {
+  --summary-color: var(--color-primary);
+  --summary-soft: var(--color-primary-soft);
   display: grid;
-  gap: 4px;
+  gap: 8px;
+  align-content: start;
 }
 
-.summaryCard small {
-  color: var(--color-text-muted);
+.summaryActive {
+  --summary-color: var(--color-success);
+  --summary-soft: #e7f4ee;
+}
+
+.summaryInactive {
+  --summary-color: var(--color-danger);
+  --summary-soft: #fdecea;
+}
+
+.summaryTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summaryTop small {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.summaryIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--summary-soft);
+  color: var(--summary-color);
 }
 
 .summaryCard strong {
-  font-size: 2rem;
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--summary-color);
 }
 
-.detail,
-.detailAlert {
+.summaryBar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.summaryBar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--summary-color);
+  transition: width 0.4s ease;
+}
+
+.summaryText {
   font-size: 0.85rem;
-  font-weight: 700;
+  color: var(--color-text-muted);
 }
 
-.detail {
-  color: var(--color-success);
-}
-
-.detailAlert {
-  color: var(--color-danger);
-}
-
-/* Buscador a la izquierda y filtros de estado a la derecha */
+/* Buscador a la izquierda y botón "Filtrar" a la derecha */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -71,6 +121,23 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Misma animación que los botones generales: sube un poco al pasar el cursor y vuelve al hacer clic */
+.filter:hover:not(:disabled),
+.filterActive:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(36, 49, 45, 0.08);
+}
+
+.filter:hover:not(:disabled) {
+  border-color: #e3c9b8;
+}
+
+.filter:active:not(:disabled),
+.filterActive:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .filter {
@@ -85,27 +152,90 @@
   color: var(--color-accent);
 }
 
-/* Paginación: 10 cuentas por página */
-.pagination {
+.filterPanel {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  margin: 4px 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.filterRow {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
+}
+
+.filterRow span {
+  min-width: 60px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.clearFilters:hover {
+  opacity: 0.75;
+}
+
+.clearFilters {
+  justify-self: start;
+  transition: opacity 0.18s ease;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* Paginación: 10 cuentas por página y 5 números a la vez, con primera y última */
+.pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
   margin-top: 16px;
 }
 
 .pagination .filters {
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.pagination .pageJump {
+  margin-left: 8px;
 }
 
 .pagination small {
+  font-size: 0.95rem;
   color: var(--color-text-muted);
 }
 
 .filter:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* "Ir a la página": campo pequeño con el mismo estilo redondeado de los botones */
+.pageJump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.pageJump input {
+  width: 72px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .table {
@@ -117,7 +247,7 @@
 .table th,
 .table td {
   text-align: left;
-  padding: 14px 12px;
+  padding: 18px 12px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -152,12 +282,12 @@
 .usuario {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
@@ -167,7 +297,11 @@
   background: #d3e4dc;
   color: #214e3f;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
+}
+
+.usuario strong {
+  font-size: 1.05rem;
 }
 
 .avatar img {
@@ -200,9 +334,15 @@
   color: var(--color-danger);
 }
 
+/* "Revisar" con la misma forma y animación de los botones de filtro y paginación; al pasar el cursor, texto y borde naranjas */
 .link {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.link.filter:hover:not(:disabled) {
   color: var(--color-primary);
-  font-weight: 700;
+  border-color: var(--color-primary);
 }
 
 @media (max-width: 760px) {

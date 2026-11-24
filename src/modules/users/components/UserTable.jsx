@@ -5,16 +5,24 @@ import { useAdminUsers } from '../hooks/useAdminUsers';
 import { NOMBRES_ROL } from '../config';
 import { getProfilePhotoUrl } from '../../core/lib/imageService';
 import { getSession } from '../../core/lib/session';
+import Icon from './Icon';
 import styles from './UserTable.module.css';
 import vista from './ProfileView.module.css';
 
 const FILTROS = [
-    { id: 'TODOS', label: 'Todas' },
     { id: 'ACTIVE', label: 'Activas' },
     { id: 'INACTIVE', label: 'Inactivas' },
 ];
 
+const FILTROS_ROL = [
+    { id: 'CONTRATANTE', label: 'Contratantes' },
+    { id: 'TRABAJADOR', label: 'Trabajadores' },
+    { id: 'ADMIN', label: 'Administradores' },
+];
+
 const POR_PAGINA = 10;
+// Cuántos números de página se muestran a la vez (ej: 9 10 11 12 13)
+const PAGINAS_VISIBLES = 5;
 
 // Fotos ya cargadas, para no volver a pedirlas al regresar a una página
 const fotosCargadas = new Map();
@@ -25,23 +33,42 @@ window.addEventListener('oy-profile-updated', () => fotosCargadas.clear());
 function UserTable() {
     const { users, loading, error } = useAdminUsers();
     const [busqueda, setBusqueda] = useState('');
-    const [filtro, setFiltro] = useState('TODOS');
+    // null = sin filtro; al volver a tocar el filtro elegido se quita
+    const [filtro, setFiltro] = useState(null);
+    const [filtroRol, setFiltroRol] = useState(null);
+    const [mostrarFiltros, setMostrarFiltros] = useState(false);
+    const [paginaEscrita, setPaginaEscrita] = useState('');
+    const filtrosActivos = (filtro ? 1 : 0) + (filtroRol ? 1 : 0);
     const [pagina, setPagina] = useState(1);
 
     const activas = users.filter((u) => u.accountStatus === 'ACTIVE').length;
     const inactivas = users.length - activas;
     const texto = busqueda.trim().toLowerCase();
     const visibles = users.filter((u) =>
-        (filtro === 'TODOS' || u.accountStatus === filtro)
+        (!filtro || u.accountStatus === filtro)
+        && (!filtroRol || u.roles.includes(filtroRol))
         && (texto === '' || u.name.toLowerCase().includes(texto) || u.email.toLowerCase().includes(texto)));
     const totalPaginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA));
     const actual = Math.min(pagina, totalPaginas);
     const inicio = (actual - 1) * POR_PAGINA;
     const enPagina = visibles.slice(inicio, inicio + POR_PAGINA);
+    // Ventana de páginas centrada en la actual, sin pasarse del inicio ni del final
+    const primeraVisible = Math.max(1, Math.min(actual - Math.floor(PAGINAS_VISIBLES / 2), totalPaginas - PAGINAS_VISIBLES + 1));
+    const ultimaVisible = Math.min(totalPaginas, primeraVisible + PAGINAS_VISIBLES - 1);
+    const paginasVisibles = Array.from({ length: ultimaVisible - primeraVisible + 1 }, (_, i) => primeraVisible + i);
+
+    // Va a la página escrita (si se pasa del rango, a la primera o a la última)
+    function irAPagina() {
+        const numero = Number(paginaEscrita);
+        if (paginaEscrita !== '' && Number.isInteger(numero)) {
+            setPagina(Math.min(Math.max(numero, 1), totalPaginas));
+        }
+        setPaginaEscrita('');
+    }
 
     return (
         <section className={vista.page}>
-            <div>
+            <div className={styles.intro}>
                 <span className="eyebrow">Panel de administración</span>
                 <h1 className={vista.name}>
                     Gestión de <span className={vista.accent}>usuarios</span>
@@ -51,9 +78,30 @@ function UserTable() {
 
             {!loading && !error && (
                 <div className={styles.summary}>
-                    <Resumen titulo="Cuentas registradas" valor={users.length} />
-                    <Resumen titulo="Activas" valor={activas} detalle={porcentaje(activas, users.length)} />
-                    <Resumen titulo="Inactivas" valor={inactivas} detalle={porcentaje(inactivas, users.length)} alerta />
+                    <Resumen
+                        icono="user"
+                        titulo="Cuentas registradas"
+                        valor={users.length}
+                        descripcion="Total de cuentas en OficioYa"
+                    />
+                    <Resumen
+                        icono="shield"
+                        titulo="Cuentas activas"
+                        valor={activas}
+                        descripcion={`${porcentaje(activas, users.length)} del total pueden usar la plataforma`}
+                        parte={activas}
+                        total={users.length}
+                        tipo="activa"
+                    />
+                    <Resumen
+                        icono="lock"
+                        titulo="Cuentas inactivas"
+                        valor={inactivas}
+                        descripcion={`${porcentaje(inactivas, users.length)} del total están desactivadas`}
+                        parte={inactivas}
+                        total={users.length}
+                        tipo="inactiva"
+                    />
                 </div>
             )}
 
@@ -69,22 +117,66 @@ function UserTable() {
                             setPagina(1);
                         }}
                     />
-                    <div className={styles.filters} role="group" aria-label="Filtrar por estado">
-                        {FILTROS.map((f) => (
+                    <button
+                        type="button"
+                        className={filtrosActivos > 0 ? styles.filterActive : styles.filter}
+                        onClick={() => setMostrarFiltros(!mostrarFiltros)}
+                        aria-expanded={mostrarFiltros}
+                    >
+                        {filtrosActivos > 0 ? `Filtrar (${filtrosActivos})` : 'Filtrar'}
+                    </button>
+                </div>
+
+                {/* Filtros ocultos hasta presionar "Filtrar" */}
+                {mostrarFiltros && (
+                    <div className={styles.filterPanel}>
+                        <div className={styles.filterRow} role="group" aria-label="Filtrar por estado">
+                            <span>Estado</span>
+                            {FILTROS.map((f) => (
+                                <button
+                                    key={f.id}
+                                    type="button"
+                                    className={filtro === f.id ? styles.filterActive : styles.filter}
+                                    onClick={() => {
+                                        setFiltro(filtro === f.id ? null : f.id);
+                                        setPagina(1);
+                                    }}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className={styles.filterRow} role="group" aria-label="Filtrar por rol">
+                            <span>Rol</span>
+                            {FILTROS_ROL.map((f) => (
+                                <button
+                                    key={f.id}
+                                    type="button"
+                                    className={filtroRol === f.id ? styles.filterActive : styles.filter}
+                                    onClick={() => {
+                                        setFiltroRol(filtroRol === f.id ? null : f.id);
+                                        setPagina(1);
+                                    }}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                        {filtrosActivos > 0 && (
                             <button
-                                key={f.id}
                                 type="button"
-                                className={filtro === f.id ? styles.filterActive : styles.filter}
+                                className={styles.clearFilters}
                                 onClick={() => {
-                                    setFiltro(f.id);
+                                    setFiltro(null);
+                                    setFiltroRol(null);
                                     setPagina(1);
                                 }}
                             >
-                                {f.label}
+                                Quitar filtros
                             </button>
-                        ))}
+                        )}
                     </div>
-                </div>
+                )}
 
                 {(loading || error) && <Skeleton lines={5} error={error} />}
                 {!loading && !error && visibles.length === 0 && (
@@ -120,7 +212,7 @@ function UserTable() {
                     </span>
                                 </td>
                                 <td>
-                                    <Link to={`/admin/users/${user.id}`} className={styles.link}>Revisar</Link>
+                                    <Link to={`/admin/users/${user.id}`} className={`${styles.filter} ${styles.link}`}>Revisar</Link>
                                 </td>
                             </tr>
                         ))}
@@ -131,9 +223,17 @@ function UserTable() {
                 {visibles.length > POR_PAGINA && (
                     <div className={styles.pagination}>
                         <small>
-                            Mostrando {inicio + 1}-{inicio + enPagina.length} de {visibles.length}
+                            Mostrando {enPagina.length} de {visibles.length} - Página {actual} de {totalPaginas}
                         </small>
                         <div className={styles.filters}>
+                            <button
+                                type="button"
+                                className={styles.filter}
+                                onClick={() => setPagina(1)}
+                                disabled={actual === 1}
+                            >
+                                Primera
+                            </button>
                             <button
                                 type="button"
                                 className={styles.filter}
@@ -142,7 +242,7 @@ function UserTable() {
                             >
                                 Anterior
                             </button>
-                            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+                            {paginasVisibles.map((n) => (
                                 <button
                                     key={n}
                                     type="button"
@@ -161,6 +261,27 @@ function UserTable() {
                             >
                                 Siguiente
                             </button>
+                            <button
+                                type="button"
+                                className={styles.filter}
+                                onClick={() => setPagina(totalPaginas)}
+                                disabled={actual === totalPaginas}
+                            >
+                                Última
+                            </button>
+                            <label className={styles.pageJump}>
+                                Ir a la página
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={totalPaginas}
+                                    placeholder={String(actual)}
+                                    value={paginaEscrita}
+                                    onChange={(e) => setPaginaEscrita(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && irAPagina()}
+                                    onBlur={irAPagina}
+                                />
+                            </label>
                         </div>
                     </div>
                 )}
@@ -199,12 +320,23 @@ function Avatar({ userId, nombre }) {
     );
 }
 
-function Resumen({ titulo, valor, detalle, alerta }) {
+// Tarjeta del resumen: ícono, título, número y una barra con la proporción sobre el total
+function Resumen({ icono, titulo, valor, descripcion, parte, total, tipo }) {
+    const estilo = tipo === 'activa' ? styles.summaryActive : tipo === 'inactiva' ? styles.summaryInactive : '';
+    const ancho = total ? Math.round((parte * 100) / total) : 0;
     return (
-        <div className={`card ${styles.summaryCard}`}>
-            <small>{titulo}</small>
+        <div className={`card ${styles.summaryCard} ${estilo}`}>
+            <div className={styles.summaryTop}>
+                <span className={styles.summaryIcon}><Icon name={icono} size={18} /></span>
+                <small>{titulo}</small>
+            </div>
             <strong>{valor}</strong>
-            {detalle && <span className={alerta ? styles.detailAlert : styles.detail}>{detalle}</span>}
+            {tipo && (
+                <div className={styles.summaryBar} aria-hidden="true">
+                    <span style={{ width: `${ancho}%` }} />
+                </div>
+            )}
+            <span className={styles.summaryText}>{descripcion}</span>
         </div>
     );
 }
