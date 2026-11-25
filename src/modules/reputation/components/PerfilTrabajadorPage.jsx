@@ -50,6 +50,8 @@ function PerfilTrabajadorPage() {
   const pausado = reputacion.estado === 'PAUSADO';
   // Nueva solicitud recibe el userId de la cuenta del trabajador (es el id que guarda Service).
   const puedeContratar = roles.includes('CONTRATANTE') && !pausado && cuenta?.userId && cuenta.userId !== miUserId;
+  // El oficio que se ve en el perfil (el buscado, si vino de Search); si no lo ofrece, su oficio principal.
+  const oficioContratado = cuenta?.oficios?.find((item) => item.nombre === perfil.oficio) ?? cuenta?.oficios?.[0];
 
   return (
     <section className={styles.pagina}>
@@ -73,7 +75,13 @@ function PerfilTrabajadorPage() {
         {puedeContratar && (
           <Link
             to={`/nueva-solicitud/${cuenta.userId}`}
-            state={{ nombre: perfil.nombre, oficio: perfil.oficio }}
+            state={{
+              nombre: perfil.nombre,
+              oficio: oficioContratado?.nombre ?? perfil.oficio,
+              oficioId: oficioContratado?.id ?? '',
+              zonaIds: cuenta.zonaIds,
+              franjas: cuenta.franjas,
+            }}
             className={`${estilosBoton.button} ${estilosBoton.primary} ${styles.contratar}`}
           >
             Contratar

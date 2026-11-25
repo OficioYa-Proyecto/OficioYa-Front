@@ -1,6 +1,8 @@
 import { ADDRESS_NOTE_MAX, TIME_SLOTS } from './config';
 
 export const EMPTY_FORM = {
+  tradeId: '',
+  trade: '',
   description: '',
   photos: [],
   neighborhood: '',
@@ -87,17 +89,78 @@ function parseSchedule(date, time) {
   return isReal ? result : null;
 }
 
-export function timeSlots(date, now = new Date()) {
+const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const WEEKDAY_NAMES = {
+  MONDAY: 'lunes',
+  TUESDAY: 'martes',
+  WEDNESDAY: 'miércoles',
+  THURSDAY: 'jueves',
+  FRIDAY: 'viernes',
+  SATURDAY: 'sábado',
+  SUNDAY: 'domingo',
+};
+
+/** Franjas del trabajador (desde el botón Contratar) que aplican a esa fecha. */
+function scheduleFor(date, schedule) {
+  const when = parseSchedule(date, '00:00');
+  if (!when) {
+    return [];
+  }
+  const weekday = WEEKDAYS[when.getDay()];
+  return schedule.filter((slot) => {
+    if (slot.tipo === 'FIXED') {
+      return slot.desde === date;
+    }
+    return slot.dia === weekday && (!slot.desde || slot.desde <= date) && (!slot.hasta || date <= slot.hasta);
+  });
+}
+
+/** Hay horario del trabajador que respetar (solo desde Contratar, y si el trabajador publicó franjas). */
+export function hasSchedule(schedule) {
+  return Array.isArray(schedule) && schedule.length > 0;
+}
+
+/** El trabajador trabaja ese día según sus franjas. */
+export function worksOn(date, schedule) {
+  return !hasSchedule(schedule) || scheduleFor(date, schedule).length > 0;
+}
+
+export function timeSlots(date, now = new Date(), schedule = null) {
   const slots = [];
   for (let hour = TIME_SLOTS.startHour; hour <= TIME_SLOTS.endHour; hour += 1) {
     for (let minute = 0; minute < 60; minute += TIME_SLOTS.stepMinutes) {
       slots.push(`${pad(hour)}:${pad(minute)}`);
     }
   }
+  // Desde Contratar solo se ofrecen las horas dentro de las franjas del trabajador ese día.
+  const ranges = hasSchedule(schedule) ? scheduleFor(date, schedule) : null;
+  const inSchedule = ranges
+    ? slots.filter((slot) => ranges.some((range) => range.inicio <= slot && slot < range.fin))
+    : slots;
   if (date !== todayISO(now)) {
-    return slots;
+    return inSchedule;
   }
-  return slots.filter((slot) => parseSchedule(date, slot) > now);
+  return inSchedule.filter((slot) => parseSchedule(date, slot) > now);
+}
+
+/** Texto con el horario del trabajador, por ejemplo: "lunes de 8:00 a. m. a 12:00 p. m. (hasta 5 de dic.)". */
+export function describeSchedule(schedule) {
+  if (!hasSchedule(schedule)) {
+    return '';
+  }
+  return schedule
+    .map((slot) => {
+      const hours = `de ${formatSlot(slot.inicio)} a ${formatSlot(slot.fin)}`;
+      if (slot.tipo === 'FIXED') {
+        const day = parseSchedule(slot.desde, '00:00');
+        const label = day ? day.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : slot.desde;
+        return `${label} ${hours}`;
+      }
+      const until = slot.hasta ? parseSchedule(slot.hasta, '00:00') : null;
+      const untilText = until ? ` (hasta ${until.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })})` : '';
+      return `${WEEKDAY_NAMES[slot.dia] ?? slot.dia} ${hours}${untilText}`;
+    })
+    .join(' · ');
 }
 
 export function formatSlot(slot) {
@@ -108,12 +171,15 @@ export function formatSlot(slot) {
   return when.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-export function validateDetails(values, now = new Date()) {
+export function validateDetails(values, now = new Date(), schedule = null) {
   const errors = {};
   const address = { ...EMPTY_FORM.address, ...values.address };
 
+  if (!values.tradeId) {
+    errors.tradeId = 'Selecciona el trabajo u oficio que necesitas.';
+  }
   if (!values.description.trim()) {
-    errors.description = 'Describe el servicio que necesitas.';
+    errors.description = 'Describe el problema.';
   }
   if (!values.neighborhood.trim()) {
     errors.neighborhood = 'Indica el barrio.';
@@ -130,12 +196,16 @@ export function validateDetails(values, now = new Date()) {
     errors.date = 'La fecha no es válida.';
   } else if (values.date < todayISO(now)) {
     errors.date = 'La fecha no puede ser anterior a hoy.';
+  } else if (!worksOn(values.date, schedule)) {
+    errors.date = 'El trabajador no trabaja ese día. Elige un día de su horario.';
   }
 
   if (!values.time) {
     errors.time = 'Selecciona la hora del servicio.';
   } else if (!timeSlots('', now).includes(values.time)) {
     errors.time = 'Selecciona una hora de la lista.';
+  } else if (hasSchedule(schedule) && values.date && !timeSlots(values.date, now, schedule).includes(values.time)) {
+    errors.time = 'Esa hora está fuera del horario del trabajador.';
   }
 
   if (!errors.date && !errors.time) {

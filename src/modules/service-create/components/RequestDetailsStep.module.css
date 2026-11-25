@@ -144,3 +144,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* Oficio y barrio bloqueados cuando se llega desde el botón Contratar del perfil. */
+.form select:disabled {
+  appearance: none;
+  opacity: 1;
+  color: var(--color-text);
+  background-color: var(--color-surface-alt, #f1ece4);
+  background-image: none;
+  cursor: not-allowed;
+}

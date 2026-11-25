@@ -7,6 +7,7 @@ import { useCreateRequest } from '../hooks/useCreateRequest';
 import { warmWorkerIds } from '../hooks/useWorkerPhoto';
 import { EMPTY_FORM } from '../requestForm';
 import { workersService } from '../services/workersService';
+import { zonesService } from '../services/zonesService';
 import '../theme.css';
 import { BellIcon, ChevronLeftIcon, ChevronRightIcon } from './icons';
 import RequestDetailsStep from './RequestDetailsStep';
@@ -38,7 +39,12 @@ function CreateRequestPage() {
   // El perfil del trabajador (botón Contratar) envía su nombre y oficio; /workers no trae el nombre.
   const { state: fromProfile } = useLocation();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(EMPTY_FORM);
+  // Desde el botón Contratar, el oficio del trabajador llega preseleccionado (se puede cambiar).
+  const [form, setForm] = useState(() =>
+    preselectedWorkerId && fromProfile?.oficioId
+      ? { ...EMPTY_FORM, tradeId: fromProfile.oficioId, trade: fromProfile.oficio ?? '' }
+      : EMPTY_FORM,
+  );
   const [preselectedWorker, setPreselectedWorker] = useState(null);
   const { sending, error: sendError, result, send, reset } = useCreateRequest(token);
 
@@ -62,6 +68,32 @@ function CreateRequestPage() {
     }).catch(() => {});
   }, [preselectedWorkerId, fromProfile?.nombre, fromProfile?.oficio]);
 
+  // Desde el botón Contratar: el primer barrio donde trabaja queda preseleccionado, y solo se puede elegir
+  // entre los barrios donde trabaja.
+  const profileZoneIds = preselectedWorkerId ? fromProfile?.zonaIds : null;
+  // Desde Contratar el oficio queda bloqueado y el barrio se limita a los del trabajador.
+  const locked = {
+    trade: Boolean(preselectedWorkerId && fromProfile?.oficioId),
+    zoneIds: Array.isArray(profileZoneIds) && profileZoneIds.length > 0 ? profileZoneIds : null,
+    // Fecha y hora limitadas a las franjas que publicó el trabajador (si no publicó ninguna, no se limita).
+    schedule: preselectedWorkerId && Array.isArray(fromProfile?.franjas) && fromProfile.franjas.length > 0
+      ? fromProfile.franjas
+      : null,
+  };
+  useEffect(() => {
+    if (!Array.isArray(profileZoneIds) || profileZoneIds.length === 0) return;
+    zonesService.list().then((zones) => {
+      const zone = zones.find((item) => profileZoneIds.includes(item.id));
+      if (zone) {
+        setForm((current) => (current.neighborhood
+          ? current
+          : { ...current, neighborhood: zone.name, neighborhoodId: zone.id }));
+      }
+    }).catch(() => {});
+    // Los ids llegan una sola vez desde el perfil.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(profileZoneIds)]);
+
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = THEME;
     return () => {
@@ -70,7 +102,17 @@ function CreateRequestPage() {
   }, []);
 
   const meta = step === SENT ? SENT_STEP : STEPS[step - 1];
-  const canGoBack = step > 1 && step < SENT && !sending;
+  const canGoBack = step < SENT && !sending;
+  // En el paso 1 la flecha vuelve a la página anterior (por ejemplo, el perfil del trabajador).
+  const handleBack = () => {
+    if (step > 1) {
+      goBack();
+    } else if ((window.history.state?.idx ?? 0) > 0) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
   const goBack = () => setStep((s) => {
     if (preselectedWorker && s === REVIEW) return 1;
     return Math.max(s - 1, 1);
@@ -105,7 +147,7 @@ function CreateRequestPage() {
         <button
           type="button"
           className={styles.back}
-          onClick={goBack}
+          onClick={handleBack}
           disabled={!canGoBack}
           aria-label="Volver al paso anterior"
         >
@@ -124,7 +166,7 @@ function CreateRequestPage() {
       />
 
       <section className={styles.body}>
-        {step === 1 && <RequestDetailsStep values={form} onChange={updateForm} onSubmit={goNext} />}
+        {step === 1 && <RequestDetailsStep values={form} onChange={updateForm} onSubmit={goNext} locked={locked} />}
         {step === 2 && (
           <WorkersStep
             values={form}
