@@ -808,3 +808,94 @@
 .phoneSection .phoneItem:last-child {
   margin-bottom: 0;
 }
+
+/* --- Vista de Verificación OTP --- */
+.otpWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 16px;
+  min-height: calc(100vh - 160px);
+}
+
+.otpCard {
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  padding: 40px 32px;
+  box-shadow: 0 12px 32px rgba(44, 30, 22, 0.08);
+}
+
+.otpCard .iconWrap {
+  margin: 0 auto 16px;
+}
+
+.otpEmailText {
+  color: var(--color-primary);
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.otpInputGroup {
+  margin: 28px 0 20px;
+}
+
+.otpInput {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.6rem;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 2px solid #e0ded8;
+  max-width: 280px;
+  margin: 0 auto;
+  display: block;
+  font-family: inherit;
+}
+
+.otpInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(220, 98, 63, 0.15);
+  outline: none;
+}
+
+.otpActions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.otpActions .btnSubmit {
+  width: 100%;
+}
+
+.otpSubActions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.otpSecondaryBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.otpSecondaryBtn:hover:not(:disabled) {
+  color: var(--color-primary);
+  background: rgba(220, 98, 63, 0.08);
+}
+
+.otpSecondaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
