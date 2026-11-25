@@ -21,7 +21,9 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
           </span>
         )}
         <div className={styles.heroText}>
-          <p className={styles.heroEyebrow}>Servicio solicitado</p>
+          <p className={styles.heroEyebrow}>
+            Servicio solicitado{values.trade ? ` · ${values.trade}` : ''}
+          </p>
           <h2>{deriveTitle(values.description)}</h2>
           <p className={styles.heroMeta}>
             {neighborhood} · {formatSchedule(values.date, values.time, { short: true })}

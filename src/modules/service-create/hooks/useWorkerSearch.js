@@ -3,14 +3,14 @@ import { workersService } from '../services/workersService';
 
 const LOADING = { status: 'loading', workers: [], message: '', error: '' };
 
-export function useWorkerSearch({ description, neighborhoodId, date, time }) {
+export function useWorkerSearch({ tradeId, neighborhoodId, date, time }) {
   const [state, setState] = useState(LOADING);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     workersService
-      .search({ description, neighborhoodId, date, time })
+      .search({ tradeId, neighborhoodId, date, time })
       .then(({ workers, message }) => {
         if (!cancelled) {
           setState({ status: 'ready', workers, message, error: '' });
@@ -24,7 +24,7 @@ export function useWorkerSearch({ description, neighborhoodId, date, time }) {
     return () => {
       cancelled = true;
     };
-  }, [description, neighborhoodId, date, time, attempt]);
+  }, [tradeId, neighborhoodId, date, time, attempt]);
 
   const retry = useCallback(() => {
     setState(LOADING);
