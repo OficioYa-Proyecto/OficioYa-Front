@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { uploadImage } from '../../core/lib/imageService';
 import { saveSession } from '../../core/lib/session';
 import { recordActivity } from '../hooks/useInactivityTimeout';
-import { login, register } from '../services/authService';
+import { login, register, sendRegisterOtp } from '../services/authService';
 import { useLocalidades } from '../../users/hooks/useLocalidades';
 import { PASSWORD_RULES, validatePassword } from '../utils/passwordPolicy';
 import styles from './RegisterPage.module.css';
@@ -150,10 +150,23 @@ export default function RegisterPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [step, setStep] = useState('FORM'); // 'FORM' | 'OTP'
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const fileInputRef = useRef(null);
   const birthDatePickerRef = useRef(null);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // El correo se valida al salir del campo; si ya se mostró el error, se revalida mientras corrige
   const emailInvalid = emailTouched && email.trim() !== '' && !validateEmail(email);
@@ -344,7 +357,60 @@ export default function RegisterPage() {
     }
 
     setError('');
+
+    if (email.trim().toLowerCase().endsWith('@oficioya.com') || email.trim().toLowerCase().endsWith('@oficioya')) {
+      setError('Por favor usa un correo real (@gmail.com, @outlook.com, institucional, etc.). El dominio @oficioya.com no puede recibir notificaciones.');
+      return;
+    }
+
     setLoading(true);
+
+    try {
+      await sendRegisterOtp({ email: email.trim() });
+      setStep('OTP');
+      setResendCooldown(60);
+      setOtpCode('');
+      setOtpError('');
+    } catch (err) {
+      if (err.status === 409) {
+        setError('Ese correo ya está registrado.');
+      } else if (err.status === 429) {
+        setError('Has solicitado códigos recientemente. Por favor espera un momento antes de volver a intentar.');
+      } else {
+        setError(err.message || 'No se pudo enviar el código de verificación al correo. Inténtalo más tarde.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || otpLoading) return;
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      await sendRegisterOtp({ email: email.trim() });
+      setResendCooldown(60);
+    } catch (err) {
+      if (err.status === 429) {
+        setOtpError('Espera unos segundos antes de pedir otro código.');
+      } else {
+        setOtpError(err.message || 'No se pudo reenviar el código. Intenta de nuevo.');
+      }
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleConfirmOtp = async (e) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setOtpError('Ingresa el código completo de 6 dígitos.');
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError('');
 
     const chosenRole =
       ROLE_OPTIONS.find((r) => r.id === selectedRoleId) || ROLE_OPTIONS[0];
@@ -360,6 +426,7 @@ export default function RegisterPage() {
         principal: Boolean(p.principal),
       })),
       roles: chosenRole.roles,
+      code: otpCode.trim(),
     };
 
     try {
@@ -385,14 +452,12 @@ export default function RegisterPage() {
           });
           recordActivity();
 
-          // Pre-cargar nombre en localStorage para el saludo sin parpadeo
           const userName = createdUser?.name || payload.name;
           if (userName) {
             localStorage.setItem('oy_userName', userName);
             window.dispatchEvent(new Event('oy-profile-updated'));
           }
 
-          // Subir foto opcional si se seleccionó una
           if (photoFile) {
             try {
               const targetUserId = createdUser?.id || authData.userId;
@@ -407,7 +472,6 @@ export default function RegisterPage() {
             }
           }
 
-          // Redirección directa según rol
           if (rolesArray.includes('TRABAJADOR')) {
             navigate('/worker/create');
           } else {
@@ -422,19 +486,15 @@ export default function RegisterPage() {
       // Éxito con fallback: redirigir a /auth?registered=1 si no se completó el auto-login
       navigate('/auth?registered=1');
     } catch (err) {
-      if (err.status === 409) {
-        setError('Ese correo ya está registrado.');
-      } else if (err.status === 403) {
-        setError('No puedes registrarte con ese rol.');
-      } else if (err.status === 400) {
-        setError(err.message || 'Datos de registro inválidos.');
-      } else if (err.status === 503) {
-        setError('El servicio no está disponible en este momento. Inténtalo de nuevo en unos minutos.');
+      if (err.status === 400) {
+        setOtpError(err.message || 'Código de verificación incorrecto o expirado.');
+      } else if (err.status === 409) {
+        setOtpError('Ese correo ya fue registrado por otro usuario.');
       } else {
-        setError(err.message || 'No se pudo conectar con el servidor. Inténtalo más tarde.');
+        setOtpError(err.message || 'Error al completar el registro. Intenta de nuevo.');
       }
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
@@ -450,8 +510,88 @@ export default function RegisterPage() {
 
   return (
     <div className={styles.page}>
-      {/* En computador: la presentación arriba, el paso 1 a la izquierda y los pasos 2 a 4 a la derecha */}
-      <form className={styles.layout} onSubmit={handleSubmit} noValidate>
+      {step === 'OTP' ? (
+        <div className={styles.otpWrapper}>
+          <div className={`${styles.card} ${styles.otpCard}`}>
+            <div className={styles.iconWrap}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </div>
+            <span className={styles.eyebrow}>PASO FINAL</span>
+            <h2 className={styles.cardTitle}>Verifica tu correo electrónico</h2>
+            <p className={styles.cardSubtitle}>
+              Hemos enviado un código de seguridad de 6 dígitos a{' '}
+              <strong className={styles.otpEmailText}>{email.trim()}</strong>.
+              Ingrésalo para activar tu cuenta.
+            </p>
+
+            <form onSubmit={handleConfirmOtp} noValidate>
+              <div className={styles.otpInputGroup}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtpCode(val);
+                    if (otpError) setOtpError('');
+                  }}
+                  className={`${styles.input} ${styles.otpInput} ${otpError ? styles.inputError : ''}`}
+                  autoFocus
+                />
+              </div>
+
+              {otpError && (
+                <div className={styles.errorBanner} role="alert" style={{ marginBottom: 16 }}>
+                  <span className={styles.errorIcon}>!</span>
+                  <span>{otpError}</span>
+                </div>
+              )}
+
+              <div className={styles.otpActions}>
+                <button
+                  type="submit"
+                  disabled={otpLoading || otpCode.length !== 6}
+                  className={styles.btnSubmit}
+                >
+                  {otpLoading ? 'Verificando y activando…' : 'Confirmar y activar cuenta'}
+                </button>
+
+                <div className={styles.otpSubActions}>
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={otpLoading || resendCooldown > 0}
+                    className={styles.otpSecondaryBtn}
+                  >
+                    {resendCooldown > 0
+                      ? `Reenviar código (${resendCooldown}s)`
+                      : 'Reenviar código'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('FORM');
+                      setOtpError('');
+                      setOtpCode('');
+                    }}
+                    className={styles.otpSecondaryBtn}
+                  >
+                    Cambiar correo
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <form className={styles.layout} onSubmit={handleSubmit} noValidate>
         <div className={styles.hero}>
           <span className={styles.eyebrow}>CREA TU CUENTA</span>
           <h1 className={styles.heroTitle}>
@@ -888,11 +1028,12 @@ export default function RegisterPage() {
               className={styles.btnSubmit}
               disabled={loading}
             >
-              {loading ? 'Creando cuenta…' : 'Crear mi cuenta'}
+              {loading ? 'Enviando código…' : 'Crear mi cuenta'}
             </button>
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }
