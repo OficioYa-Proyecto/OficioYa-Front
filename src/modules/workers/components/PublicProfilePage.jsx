@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import { resolveGalleryImageUrl } from '../services/imagesClient';
 import EmptyState from './ui/EmptyState';
 import Icon from './ui/Icon';
 import StatusMessage from './ui/StatusMessage';
@@ -115,7 +116,7 @@ function PublicProfilePage() {
               <div className={styles.publicGallery}>
                 {profile.photos.map((photo) => (
                   <figure key={photo.id}>
-                    <img alt={photo.description || 'Trabajo realizado'} loading="lazy" src={photo.url} />
+                    <img alt={photo.description || 'Trabajo realizado'} loading="lazy" src={resolveGalleryImageUrl(photo.url)} />
                     <figcaption>
                       {photo.description || 'Sin descripción'}
                       <small>{formatDate(photo.uploadedAt.slice(0, 10))}</small>

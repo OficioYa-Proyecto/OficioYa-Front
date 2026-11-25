@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resolveGalleryImageUrl } from '../services/imagesClient';
 import { Link } from 'react-router-dom';
 import Icon from './ui/Icon';
 import StatusMessage from './ui/StatusMessage';
@@ -129,7 +130,7 @@ function DashboardPage() {
             ) : (
               <div className={styles.dashPhotos}>
                 {profile.photos.slice(0, 4).map((photo) => (
-                  <img alt={photo.description || 'Trabajo realizado'} key={photo.id} src={photo.url} />
+                  <img alt={photo.description || 'Trabajo realizado'} key={photo.id} src={resolveGalleryImageUrl(photo.url)} />
                 ))}
               </div>
             )}
