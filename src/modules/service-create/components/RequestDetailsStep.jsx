@@ -5,8 +5,10 @@ import { useTrades } from '../hooks/useTrades';
 import { useZones } from '../hooks/useZones';
 import {
   EMPTY_FORM,
+  availableDates,
   composeAddress,
   describeSchedule,
+  formatAvailableDate,
   formatSlot,
   normalizeDigits,
   normalizeNote,
@@ -169,6 +171,8 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
   const groups = groupByLocality(allowedZones);
   const trades = useTrades();
   const tradeGroups = groupByCategory(trades.items);
+  // Desde Contratar solo se pueden elegir días en los que el trabajador tiene franjas disponibles.
+  const scheduledDates = locked.schedule ? availableDates(locked.schedule) : [];
 
   const bind = (name) => ({
     value: values[name],
@@ -184,6 +188,12 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
       return;
     }
     onSubmit();
+  };
+
+  const changeDate = (date) => {
+    onChange(
+      timeSlots(date, new Date(), locked.schedule).includes(values.time) ? { date } : { date, time: '' },
+    );
   };
 
   return (
@@ -311,18 +321,28 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
               error={visible.date}
               icon={<CalendarIcon size={18} />}
             >
-              <input
-                type="date"
-                min={todayISO()}
-                {...fieldProps('field-date', visible.date, { required: true })}
-                value={values.date}
-                onChange={(event) => {
-                  const date = event.target.value;
-                  onChange(
-                    timeSlots(date, new Date(), locked.schedule).includes(values.time) ? { date } : { date, time: '' },
-                  );
-                }}
-              />
+              {locked.schedule ? (
+                <select
+                  {...fieldProps('field-date', visible.date, { required: true })}
+                  value={values.date}
+                  onChange={(event) => changeDate(event.target.value)}
+                >
+                  <option value="">Selecciona un día disponible</option>
+                  {scheduledDates.map((date) => (
+                    <option key={date} value={date}>
+                      {formatAvailableDate(date)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="date"
+                  min={todayISO()}
+                  {...fieldProps('field-date', visible.date, { required: true })}
+                  value={values.date}
+                  onChange={(event) => changeDate(event.target.value)}
+                />
+              )}
             </Field>
             <Field
               id="field-time"

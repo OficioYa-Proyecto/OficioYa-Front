@@ -1,4 +1,5 @@
 import { request } from '../../core/lib/httpClient';
+import { buscarPorOficio } from '../../search/services/searchService';
 
 const SEARCH_TTL_MS = 60 * 1000;
 const DAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -80,20 +81,19 @@ export const workersService = {
   isMock: false,
   notice: '',
 
-  // Trabajadores del oficio elegido en el paso 1, filtrados por barrio, día y hora (búsqueda por oficio de Search).
+  // Misma búsqueda por oficio de la página Buscar, con el barrio elegido en el paso 1 añadido al filtro.
   search: async ({ tradeId, neighborhoodId, date, time }) => {
     if (!tradeId) {
       throw new Error('Selecciona el trabajo u oficio para buscar trabajadores.');
     }
-    const params = new URLSearchParams();
-    if (neighborhoodId) params.set('barrioIds', String(neighborhoodId));
+    const filtros = { orden: 'MAYOR_A_MENOR' };
+    if (neighborhoodId) filtros.barrioIds = String(neighborhoodId);
     const day = weekdayOf(date);
-    if (day) params.set('diaSemana', day);
+    if (day) filtros.diaSemana = day;
     const hour = timeOf(time);
-    if (hour) params.set('hora', hour);
-    const query = params.toString();
-    return cachedSearch(`${tradeId}?${query}`, async () => {
-      const response = await request(`/search/oficios/${tradeId}/trabajadores${query ? `?${query}` : ''}`);
+    if (hour) filtros.hora = hour;
+    return cachedSearch(`${tradeId}?${JSON.stringify(filtros)}`, async () => {
+      const response = await buscarPorOficio(tradeId, filtros);
       const results = Array.isArray(response?.resultados) ? response.resultados : [];
       const workers = results.filter((item) => item.trabajadorId).map(toWorker);
       return { workers, message: '' };
