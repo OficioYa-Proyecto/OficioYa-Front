@@ -8,11 +8,19 @@ export function login({ email, password }) {
   });
 }
 
+/** POST /api/v1/auth/register/send-code → void */
+export function sendRegisterOtp({ email }) {
+  return request('/auth/register/send-code', {
+    method: 'POST',
+    body: { email },
+  });
+}
+
 /** POST /api/v1/auth/register → UserDto */
-export function register({ name, email, password, roles, phones, birthDate, localityId }) {
+export function register({ name, email, password, roles, phones, birthDate, localityId, code }) {
   return request('/auth/register', {
     method: 'POST',
-    body: { name, email, password, roles, phones, birthDate, localityId },
+    body: { name, email, password, roles, phones, birthDate, localityId, code },
   });
 }
 
