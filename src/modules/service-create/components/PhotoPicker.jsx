@@ -49,6 +49,7 @@ function PhotoPicker({ photos, onChange }) {
       const loaded = await Promise.all(
         accepted.map(async ({ id, file }) => ({
           id,
+          file,
           name: file.name,
           type: file.type,
           size: file.size,
