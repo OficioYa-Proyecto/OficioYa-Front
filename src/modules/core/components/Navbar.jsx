@@ -4,7 +4,17 @@ import logo from '../../../assets/Logo.png';
 import { getProfilePhotoUrl } from '../lib/imageService';
 import { clearSession, getSession } from '../lib/session';
 import { navLinks } from '../lib/moduleRegistry';
+import { requestsService } from '../../service/services/requestsService';
 import styles from './Navbar.module.css';
+
+function BellIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
 
 function getInitials(name) {
   if (!name || typeof name !== 'string') return 'OY';
@@ -34,7 +44,10 @@ function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifItems, setNotifItems] = useState([]);
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     function syncProfileName() {
@@ -61,6 +74,9 @@ function Navbar() {
     function handleOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
       }
     }
     document.addEventListener('mousedown', handleOutside);
@@ -99,6 +115,36 @@ function Navbar() {
     localStorage.removeItem('oy_userName');
     clearSession();
     navigate('/auth', { replace: true });
+  }
+
+  function loadNotifications() {
+    const items = [];
+    const tasks = [];
+    if (userRoles.includes('TRABAJADOR')) {
+      tasks.push(
+        requestsService
+          .listMine('TRABAJADOR')
+          .then((list) => {
+            (Array.isArray(list) ? list : [])
+              .filter((r) => r?.state === 'PENDING')
+              .forEach((r) => items.push({ id: r.id, text: 'Nueva solicitud de servicio', link: '/mis-servicios', color: 'blue' }));
+          })
+          .catch(() => {}),
+      );
+    }
+    if (userRoles.includes('CONTRATANTE')) {
+      tasks.push(
+        requestsService
+          .listMine('CONTRATANTE')
+          .then((list) => {
+            (Array.isArray(list) ? list : [])
+              .filter((r) => r?.state === 'COMPLETED')
+              .forEach((r) => items.push({ id: r.id, text: 'Trabajo completado por calificar', link: `/solicitudes?calificar=${r.id}`, color: 'primary' }));
+          })
+          .catch(() => {}),
+      );
+    }
+    Promise.all(tasks).then(() => setNotifItems(items));
   }
 
   useEffect(() => {
@@ -147,6 +193,43 @@ function Navbar() {
       {/* Acceso a cuenta / perfil a la derecha */}
       {!isAuthPage && (
         <div className={styles.rightArea}>
+          {session && (
+            <div className={styles.notifWrap} ref={notifRef}>
+              <button
+                type="button"
+                className={styles.notifBtn}
+                onClick={() => {
+                  if (!notifOpen) loadNotifications();
+                  setNotifOpen((prev) => !prev);
+                }}
+                aria-label="Notificaciones"
+                aria-expanded={notifOpen}
+              >
+                <BellIcon />
+                {notifItems.length > 0 && (
+                  <span className={styles.notifBadge}>{notifItems.length}</span>
+                )}
+              </button>
+              {notifOpen && (
+                <div className={styles.notifDropdown}>
+                  {notifItems.length === 0 ? (
+                    <p className={styles.notifEmpty}>Sin notificaciones nuevas</p>
+                  ) : (
+                    notifItems.map((item, index) => (
+                      <Link
+                        key={`${item.id}-${index}`}
+                        to={item.link}
+                        className={`${styles.notifItem} ${item.color === 'blue' ? styles.notifBlue : styles.notifPrimary}`}
+                        onClick={() => setNotifOpen(false)}
+                      >
+                        {item.text}
+                      </Link>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {session && (
             <div className={styles.accountWrap} ref={menuRef}>
               <button
