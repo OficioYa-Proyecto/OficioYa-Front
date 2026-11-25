@@ -245,6 +245,7 @@ function Navbar() {
                           className={styles.notifActionBtn}
                           onClick={() => {
                             setNotifOpen(false);
+                            setNotifItems((prev) => prev.filter((n) => n.id !== item.id));
                             navigate(item.link);
                           }}
                         >
