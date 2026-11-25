@@ -1,9 +1,16 @@
 import { request } from '../../core/lib/httpClient';
 
 export const createRequestService = {
-  create: async (payload, token) => {
-    const result = await request('/requests', { method: 'POST', body: payload, token });
-    const sent = typeof result?.sent === 'number' ? result.sent : (result?.workersId?.length ?? 0);
+  create: async (payload, photos, token) => {
+    const form = new FormData();
+    form.append(
+      'data',
+      new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+    );
+    photos.forEach((photo) => form.append('images', photo.file));
+
+    const result = await request('/requests', { method: 'POST', body: form, token });
+    const sent = Array.isArray(result) ? result.length : (result?.workersId?.length ?? 0);
     if (sent < 1) {
       throw new Error(
         'La solicitud no se envió a ningún trabajador. Prueba con otros trabajadores.',
