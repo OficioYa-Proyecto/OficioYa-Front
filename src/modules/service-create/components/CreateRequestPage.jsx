@@ -46,6 +46,9 @@ function CreateRequestPage() {
       : EMPTY_FORM,
   );
   const [preselectedWorker, setPreselectedWorker] = useState(null);
+  // Al elegir "buscar otros trabajadores" se ignora el trabajador del perfil, pero se conservan oficio y barrio.
+  const [searchingOthers, setSearchingOthers] = useState(false);
+  const hasPreselection = Boolean(preselectedWorkerId) && !searchingOthers;
   const { sending, error: sendError, result, send, reset } = useCreateRequest(token);
 
   useEffect(() => {
@@ -53,7 +56,7 @@ function CreateRequestPage() {
   }, []);
 
   useEffect(() => {
-    if (!preselectedWorkerId) return;
+    if (!hasPreselection) return;
     workersService.lookup().then((ws) => {
       const found = ws.find((x) => x.id === preselectedWorkerId);
       const w = found && {
@@ -66,17 +69,17 @@ function CreateRequestPage() {
         setForm((current) => ({ ...current, workers: [w] }));
       }
     }).catch(() => {});
-  }, [preselectedWorkerId, fromProfile?.nombre, fromProfile?.oficio]);
+  }, [hasPreselection, preselectedWorkerId, fromProfile?.nombre, fromProfile?.oficio]);
 
   // Desde el botón Contratar: el primer barrio donde trabaja queda preseleccionado, y solo se puede elegir
   // entre los barrios donde trabaja.
-  const profileZoneIds = preselectedWorkerId ? fromProfile?.zonaIds : null;
+  const profileZoneIds = hasPreselection ? fromProfile?.zonaIds : null;
   // Desde Contratar el oficio queda bloqueado y el barrio se limita a los del trabajador.
   const locked = {
-    trade: Boolean(preselectedWorkerId && fromProfile?.oficioId),
+    trade: Boolean(hasPreselection && fromProfile?.oficioId),
     zoneIds: Array.isArray(profileZoneIds) && profileZoneIds.length > 0 ? profileZoneIds : null,
     // Fecha y hora limitadas a las franjas que publicó el trabajador (si no publicó ninguna, no se limita).
-    schedule: preselectedWorkerId && Array.isArray(fromProfile?.franjas) && fromProfile.franjas.length > 0
+    schedule: hasPreselection && Array.isArray(fromProfile?.franjas) && fromProfile.franjas.length > 0
       ? fromProfile.franjas
       : null,
   };
@@ -114,11 +117,11 @@ function CreateRequestPage() {
     }
   };
   const goBack = () => setStep((s) => {
-    if (preselectedWorker && s === REVIEW) return 1;
+    if (preselectedWorker && !searchingOthers && s === REVIEW) return 1;
     return Math.max(s - 1, 1);
   });
   const goNext = () => setStep((s) => {
-    if (s === 1 && preselectedWorkerId) return REVIEW;
+    if (s === 1 && hasPreselection) return REVIEW;
     return Math.min(s + 1, SENT);
   });
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
@@ -127,10 +130,20 @@ function CreateRequestPage() {
       setStep(SENT);
     }
   };
+  const searchOtherWorkers = () => {
+    setPreselectedWorker(null);
+    setSearchingOthers(true);
+    setForm((current) => ({ ...current, workers: [] }));
+    setStep(2);
+  };
   const restart = () => {
     reset();
+    setPreselectedWorker(null);
+    setSearchingOthers(false);
     setForm(EMPTY_FORM);
     setStep(1);
+    // Al volver a una solicitud nueva se quita el trabajador del perfil: el oficio vuelve a ser editable.
+    navigate('/nueva-solicitud', { replace: true, state: null });
   };
 
   const primaryAction =
@@ -176,7 +189,10 @@ function CreateRequestPage() {
           />
         )}
         {preselectedWorker && step === REVIEW && (
-          <p className={styles.info}>Trabajador seleccionado: {preselectedWorker.name}</p>
+          <p className={styles.info}>
+            Trabajador seleccionado: {preselectedWorker.name}. También puedes buscar otros trabajadores con este
+            oficio y barrio.
+          </p>
         )}
         {step === REVIEW && (
           <ReviewStep values={form} onEditWorkers={goBack} busy={sending} error={sendError} />
@@ -196,10 +212,17 @@ function CreateRequestPage() {
             <Button onClick={() => navigate('/solicitudes')}>Ver mis solicitudes</Button>
           </div>
         ) : (
-          <Button {...primaryAction}>
-            {primaryLabel}
-            <PrimaryIcon size={18} />
-          </Button>
+          <div style={SENT_ACTIONS_STYLE}>
+            {step === REVIEW && hasPreselection && (
+              <Button variant="secondary" onClick={searchOtherWorkers}>
+                Buscar otros trabajadores
+              </Button>
+            )}
+            <Button {...primaryAction}>
+              {primaryLabel}
+              <PrimaryIcon size={18} />
+            </Button>
+          </div>
         )}
       </footer>
     </div>

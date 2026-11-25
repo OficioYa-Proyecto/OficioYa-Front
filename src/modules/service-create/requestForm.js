@@ -143,6 +143,43 @@ export function timeSlots(date, now = new Date(), schedule = null) {
   return inSchedule.filter((slot) => parseSchedule(date, slot) > now);
 }
 
+const SCHEDULE_DAYS_AHEAD = 60;
+
+/** Días (ISO) en los que el trabajador tiene franjas con horas todavía disponibles. */
+export function availableDates(schedule, now = new Date(), daysAhead = SCHEDULE_DAYS_AHEAD) {
+  if (!hasSchedule(schedule)) {
+    return [];
+  }
+  const dates = new Set();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  for (let offset = 0; offset < daysAhead; offset += 1) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + offset);
+    const iso = todayISO(day);
+    if (worksOn(iso, schedule) && timeSlots(iso, now, schedule).length > 0) {
+      dates.add(iso);
+    }
+  }
+  // Una franja fija puede estar más allá del horizonte de los días repetitivos.
+  for (const slot of schedule) {
+    if (slot.tipo === 'FIXED' && slot.desde && slot.desde >= todayISO(now)) {
+      dates.add(slot.desde);
+    }
+  }
+  return [...dates].sort();
+}
+
+/** Etiqueta legible para un día disponible, por ejemplo: "Lunes 24 nov". */
+export function formatAvailableDate(date) {
+  const when = parseSchedule(date, '00:00');
+  if (!when) {
+    return date;
+  }
+  return capitalize(
+    when.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+  );
+}
+
 /** Texto con el horario del trabajador, por ejemplo: "lunes de 8:00 a. m. a 12:00 p. m. (hasta 5 de dic.)". */
 export function describeSchedule(schedule) {
   if (!hasSchedule(schedule)) {
