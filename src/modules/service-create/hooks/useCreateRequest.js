@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { buildCreateRequestPayload } from '../requestPayload';
 import { resolveUserIds } from './useWorkerPhoto';
 import { createRequestService, describeSendError } from '../services/createRequestService';
-import { imagesService } from '../services/imagesService';
 
 const IDLE = { sending: false, error: '', result: null };
 
