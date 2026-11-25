@@ -1,7 +1,7 @@
 import { request } from '../../core/lib/httpClient';
+import { buscarPorOficio } from '../../search/services/searchService';
 
-const MIN_TEXT = 3;
-const MAX_TEXT = 500;
+const SEARCH_TTL_MS = 60 * 1000;
 const DAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 const RATE_UNITS = {
@@ -9,6 +9,23 @@ const RATE_UNITS = {
   PER_JOB: 'por trabajo',
   PER_DAY: 'por d\u00eda',
 };
+
+const searchCache = new Map();
+
+function cachedSearch(key, run) {
+  const hit = searchCache.get(key);
+  if (hit && Date.now() - hit.at < SEARCH_TTL_MS) {
+    return hit.promise;
+  }
+  const promise = run();
+  searchCache.set(key, { at: Date.now(), promise });
+  promise.catch(() => {
+    if (searchCache.get(key)?.promise === promise) {
+      searchCache.delete(key);
+    }
+  });
+  return promise;
+}
 
 function money(value) {
   return `$${Number(value).toLocaleString('es-CO')}`;
@@ -24,6 +41,8 @@ function formatLookupRate(primaryTrade) {
 function toLookupWorker(raw, index) {
   return {
     id: raw.userId,
+    // Ya es el id de la cuenta: así resolveUserIds no lo busca como perfil de Worker al enviar.
+    userId: raw.userId,
     name: `Trabajador ${index + 1}`,
     trade: raw.primaryTrade?.trade?.name || 'Oficio sin especificar',
     rate: formatLookupRate(raw.primaryTrade),
@@ -62,24 +81,23 @@ export const workersService = {
   isMock: false,
   notice: '',
 
-  search: async ({ description, neighborhoodId, date, time }) => {
-    const text = (description ?? '').trim().slice(0, MAX_TEXT);
-    if (text.length < MIN_TEXT) {
-      throw new Error('Describe un poco m\u00e1s el servicio para buscar trabajadores.');
+  // Misma búsqueda por oficio de la página Buscar, con el barrio elegido en el paso 1 añadido al filtro.
+  search: async ({ tradeId, neighborhoodId, date, time }) => {
+    if (!tradeId) {
+      throw new Error('Selecciona el trabajo u oficio para buscar trabajadores.');
     }
-    const criterios = {
-      barrioIds: neighborhoodId ? [Number(neighborhoodId)] : undefined,
-      diaSemana: weekdayOf(date),
-      hora: timeOf(time),
-    };
-    const response = await request('/search/lenguaje-natural', {
-      method: 'POST',
-      body: { texto: text, criterios },
+    const filtros = { orden: 'MAYOR_A_MENOR' };
+    if (neighborhoodId) filtros.barrioIds = String(neighborhoodId);
+    const day = weekdayOf(date);
+    if (day) filtros.diaSemana = day;
+    const hour = timeOf(time);
+    if (hour) filtros.hora = hour;
+    return cachedSearch(`${tradeId}?${JSON.stringify(filtros)}`, async () => {
+      const response = await buscarPorOficio(tradeId, filtros);
+      const results = Array.isArray(response?.resultados) ? response.resultados : [];
+      const workers = results.filter((item) => item.trabajadorId).map(toWorker);
+      return { workers, message: '' };
     });
-    const results = Array.isArray(response?.resultados) ? response.resultados : [];
-    const workers = results.filter((item) => item.trabajadorId).map(toWorker);
-    const message = workers.length > 0 ? '' : response?.mensaje || '';
-    return { workers, message };
   },
 
   lookup: async () => {

@@ -5,5 +5,5 @@ import { getSession } from '../core/lib/session';
 export function leerSesion() {
   const sesion = getSession();
   const roles = (sesion?.roles ?? []).map((rol) => String(rol).toUpperCase().replace('ROLE_', ''));
-  return { token: sesion?.token ?? '', roles };
+  return { token: sesion?.token ?? '', roles, userId: sesion?.userId ?? '' };
 }

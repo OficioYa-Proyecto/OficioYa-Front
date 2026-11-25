@@ -6,7 +6,7 @@ function workersText(count) {
   return count === 1 ? '1 trabajador' : `${count} trabajadores`;
 }
 
-function SentStep({ values, result }) {
+function SentStep({ values, result, pending = false }) {
   const selected = values.workers.length;
 
   return (
@@ -16,11 +16,16 @@ function SentStep({ values, result }) {
           <CheckIcon size={34} />
         </span>
       </div>
-      <p className="eyebrow">Envío completado</p>
+      <p className="eyebrow">{pending ? 'Confirmando envío' : 'Envío completado'}</p>
       <h2>¡Solicitud enviada!</h2>
       <p className={styles.lead}>
         Notificamos a {workersText(result.sent)}. Te avisaremos cuando respondan.
       </p>
+      {pending && (
+        <p className={styles.pending}>
+          Estamos terminando de avisar a los trabajadores. Puedes seguir aquí mientras tanto.
+        </p>
+      )}
 
       <dl className={styles.summary}>
         <div className={styles.row}>
@@ -41,11 +46,6 @@ function SentStep({ values, result }) {
         <p className={styles.notice}>
           Seleccionaste {workersText(selected)}, pero la solicitud solo se envió a{' '}
           {workersText(result.sent)}.
-        </p>
-      )}
-      {result.photosWarning && (
-        <p role="alert" className={styles.notice}>
-          {result.photosWarning}
         </p>
       )}
     </div>

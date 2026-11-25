@@ -18,18 +18,43 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
 }
 
-// Fecha máxima permitida para ser mayor de 18 años (hoy menos 18 años en formato AAAA-MM-DD)
+// Mismas reglas que valida el back para la fecha de nacimiento (RF-01)
+const EDAD_MINIMA = 18;
+const ANIO_MINIMO = 1900;
+
+// Fecha máxima permitida para ser mayor de edad (hoy menos EDAD_MINIMA años en formato AAAA-MM-DD)
 function getMaxAdultBirthDate() {
   const today = new Date();
-  const year = today.getFullYear() - 18;
+  const year = today.getFullYear() - EDAD_MINIMA;
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
-function isAdultBirthDate(dateStr) {
-  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-  return dateStr <= getMaxAdultBirthDate();
+// Mientras escribe deja solo números y pone las barras: "15051995" -> "15/05/1995"
+function formatBirthDateInput(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('/');
+}
+
+// "AAAA-MM-DD" (lo que devuelve el calendario) -> "dd/mm/aaaa"
+function fromIsoDate(isoDate) {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+// "dd/mm/aaaa" -> "AAAA-MM-DD" (formato que recibe el back); null si la fecha no existe
+function toIsoDate(text) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+  if (!match) return null;
+  const [, day, month, year] = match.map(Number);
+  const date = new Date(year, month - 1, day);
+  if (year < ANIO_MINIMO || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function isAdultBirthDate(isoDate) {
+  return isoDate <= getMaxAdultBirthDate();
 }
 
 const ROLE_OPTIONS = [
@@ -128,20 +153,24 @@ export default function RegisterPage() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const fileInputRef = useRef(null);
+  const birthDatePickerRef = useRef(null);
 
   // El correo se valida al salir del campo; si ya se mostró el error, se revalida mientras corrige
   const emailInvalid = emailTouched && email.trim() !== '' && !validateEmail(email);
 
   // Errores por campo: se muestran tras intentar enviar y se actualizan mientras el usuario corrige
   const REQUIRED_MSG = 'Este campo es obligatorio.';
-  const maxBirthDate = getMaxAdultBirthDate();
+  const isoBirthDate = toIsoDate(birthDate);
   const nameError = submitted && !name.trim() ? REQUIRED_MSG : null;
+  const localityError = submitted && !localityId ? REQUIRED_MSG : null;
   const birthDateError =
     submitted && !birthDate
       ? REQUIRED_MSG
-      : (submitted || birthDateTouched) && birthDate && !isAdultBirthDate(birthDate)
-        ? 'Debes ser mayor de edad para registrarte.'
-        : null;
+      : (submitted || birthDateTouched) && birthDate && !isoBirthDate
+        ? 'Escribe una fecha válida en formato dd/mm/aaaa.'
+        : (submitted || birthDateTouched) && isoBirthDate && !isAdultBirthDate(isoBirthDate)
+          ? 'Debes ser mayor de edad para registrarte.'
+          : null;
   const emailError =
     submitted && !email.trim()
       ? REQUIRED_MSG
@@ -250,8 +279,14 @@ export default function RegisterPage() {
     if (!birthDate) {
       return 'La fecha de nacimiento es obligatoria.';
     }
-    if (!isAdultBirthDate(birthDate)) {
+    if (!isoBirthDate) {
+      return 'Escribe una fecha válida en formato dd/mm/aaaa.';
+    }
+    if (!isAdultBirthDate(isoBirthDate)) {
       return 'Debes ser mayor de edad para registrarte.';
+    }
+    if (!localityId) {
+      return 'La localidad es obligatoria.';
     }
     if (!email.trim()) {
       return 'El correo electrónico es obligatorio.';
@@ -318,8 +353,8 @@ export default function RegisterPage() {
       name: name.trim(),
       email: email.trim(),
       password,
-      birthDate,
-      localityId: localityId ? Number(localityId) : undefined,
+      birthDate: isoBirthDate,
+      localityId: Number(localityId),
       phones: phones.map((p) => ({
         number: p.number.trim(),
         principal: Boolean(p.principal),
@@ -415,32 +450,30 @@ export default function RegisterPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        {/* Hero */}
+      {/* En computador: la presentación arriba, el paso 1 a la izquierda y los pasos 2 a 4 a la derecha */}
+      <form className={styles.layout} onSubmit={handleSubmit} noValidate>
         <div className={styles.hero}>
           <span className={styles.eyebrow}>CREA TU CUENTA</span>
           <h1 className={styles.heroTitle}>
-            Elige cómo<br />
-            usar <span className={styles.brandHighlight}>OficioYa</span>
+            Elige cómo usar <span className={styles.brandHighlight}>OficioYa</span>
           </h1>
           <p className={styles.heroSub}>
             Completa tus datos en pocos minutos. Sin vueltas, como debe ser.
           </p>
         </div>
 
-        {/* Card */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.stepBadge}>1</div>
-            <div className={styles.cardHeaderInfo}>
-              <h2 className={styles.cardTitle}>¿Cómo quieres usar tu cuenta?</h2>
-              <p className={styles.cardSubtitle}>
-                No te preocupes, puedes cambiarlo más adelante desde tu cuenta.
-              </p>
+        <aside>
+          <div className={`${styles.card} ${styles.roleCardBox}`}>
+            <div className={styles.cardHeader}>
+              <div className={styles.stepBadge}>1</div>
+              <div className={styles.cardHeaderInfo}>
+                <h2 className={styles.cardTitle}>¿Cómo quieres usar tu cuenta?</h2>
+                <p className={styles.cardSubtitle}>
+                  No te preocupes, puedes cambiarlo más adelante desde tu cuenta.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <form onSubmit={handleSubmit} noValidate>
             {/* Selector de Rol (3 tarjetas) */}
             <div className={styles.roleGrid} role="radiogroup" aria-label="¿Cómo quieres usar tu cuenta?">
               {ROLE_OPTIONS.map((opt) => {
@@ -454,168 +487,170 @@ export default function RegisterPage() {
                     role="radio"
                     aria-checked={isActive}
                   >
-                    <div className={styles.roleCardTop}>
-                      <div className={styles.roleIconWrap}>{opt.icon}</div>
-                      <div
-                        className={`${styles.radioIndicator} ${isActive ? styles.radioIndicatorActive : ''}`}
-                      >
-                        {isActive && <div className={styles.radioDot} />}
-                      </div>
-                    </div>
+                    <div className={styles.roleIconWrap}>{opt.icon}</div>
                     <div className={styles.roleCardTitle}>{opt.title}</div>
                     <div className={styles.roleCardDesc}>{opt.desc}</div>
                   </button>
                 );
               })}
             </div>
+          </div>
+        </aside>
 
-            {/* Sección: Información de la cuenta (correo izquierda, contraseña derecha) */}
-            <div className={styles.sectionHeader}>
-              <div className={styles.stepBadge}>2</div>
+        <div className={styles.card}>
+          {/* Sección: Información de la cuenta (correo izquierda, contraseña derecha) */}
+          <div className={styles.sectionHeader}>
+            <div className={styles.stepBadge}>2</div>
+            <div className={styles.cardHeaderInfo}>
               <h3 className={styles.sectionTitle}>Información de la cuenta</h3>
+              <p className={styles.cardSubtitle}>
+                Con tu correo y contraseña iniciarás sesión en OficioYa. No podrás cambiarlos después.
+              </p>
             </div>
-            <div className={styles.gridTwo}>
-              <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="email">
-                  <span>
-                    Correo electrónico <span className={styles.required}>*</span>
-                  </span>
-                </label>
+          </div>
+          <div className={styles.gridTwo}>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="email">
+                <span>
+                  Correo electrónico <span className={styles.required}>*</span>
+                </span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Correo electrónico"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                autoComplete="email"
+                className={emailError ? styles.inputInvalid : undefined}
+                aria-invalid={Boolean(emailError)}
+                aria-describedby={emailError ? 'email-error' : undefined}
+                required
+              />
+              {emailError && (
+                <span id="email-error" className={styles.fieldError} role="alert">
+                  {emailError}
+                </span>
+              )}
+            </div>
+
+            <div className={`${styles.formGroup} ${styles.passwordGroup}`}>
+              <label className={styles.label} htmlFor="password">
+                <span>
+                  Crea una contraseña <span className={styles.required}>*</span>
+                </span>
+              </label>
+              <div
+                className={styles.passWrap}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget)) {
+                    setPasswordFocused(false);
+                  }
+                }}
+              >
                 <input
-                  id="email"
-                  type="email"
-                  placeholder="Correo electrónico"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => setEmailTouched(true)}
-                  autoComplete="email"
-                  className={emailError ? styles.inputInvalid : undefined}
-                  aria-invalid={Boolean(emailError)}
-                  aria-describedby={emailError ? 'email-error' : undefined}
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className={passwordError ? styles.inputInvalid : undefined}
+                  aria-invalid={Boolean(passwordError)}
+                  aria-describedby={passwordError ? 'password-error' : undefined}
                   required
                 />
-                {emailError && (
-                  <span id="email-error" className={styles.fieldError} role="alert">
-                    {emailError}
-                  </span>
-                )}
-              </div>
-
-              <div className={`${styles.formGroup} ${styles.passwordGroup}`}>
-                <label className={styles.label} htmlFor="password">
-                  <span>
-                    Crea una contraseña <span className={styles.required}>*</span>
-                  </span>
-                </label>
-                <div
-                  className={styles.passWrap}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={(e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                      setPasswordFocused(false);
-                    }
-                  }}
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    className={passwordError ? styles.inputInvalid : undefined}
-                    aria-invalid={Boolean(passwordError)}
-                    aria-describedby={passwordError ? 'password-error' : undefined}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className={styles.eyeBtn}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {showPassword ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
+                  {showPassword ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {passwordError && (
+                <span id="password-error" className={styles.fieldError}>
+                  {passwordError}
+                </span>
+              )}
+
+              {/* Requisitos pendientes: globo a un lado, solo lo que falta y solo mientras se escribe */}
+              {passwordFocused && missingRules.length > 0 && (
+                <div className={styles.passHint} role="status" aria-live="polite">
+                  <div className={styles.passHintTitle}>Te falta:</div>
+                  <ul className={styles.passHintList}>
+                    {missingRules.map((rule) => (
+                      <li key={rule.id}>{rule.label}</li>
+                    ))}
+                  </ul>
                 </div>
+              )}
+            </div>
+          </div>
 
-                {passwordError && (
-                  <span id="password-error" className={styles.fieldError}>
-                    {passwordError}
-                  </span>
-                )}
-
-                {/* Requisitos pendientes: globo a un lado, solo lo que falta y solo mientras se escribe */}
-                {passwordFocused && missingRules.length > 0 && (
-                  <div className={styles.passHint} role="status" aria-live="polite">
-                    <div className={styles.passHintTitle}>Te falta:</div>
-                    <ul className={styles.passHintList}>
-                      {missingRules.map((rule) => (
-                        <li key={rule.id}>{rule.label}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+          {/* Sección: Datos principales (nombre; fecha de nacimiento y localidad; teléfonos) */}
+          <div className={`${styles.sectionHeader} ${styles.sectionHeaderDivided}`}>
+            <div className={styles.stepBadge}>3</div>
+            <h3 className={styles.sectionTitle}>Datos principales</h3>
+          </div>
+          <div className={styles.gridTwo}>
+            <div className={`${styles.formGroup} ${styles.spanAll}`}>
+              <label className={styles.label} htmlFor="name">
+                <span>
+                  Nombre completo <span className={styles.required}>*</span>
+                </span>
+              </label>
+              <input
+                id="name"
+                type="text"
+                placeholder="Nombre completo"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                className={nameError ? styles.inputInvalid : undefined}
+                aria-invalid={Boolean(nameError)}
+                aria-describedby={nameError ? 'name-error' : undefined}
+                required
+              />
+              {nameError && (
+                <span id="name-error" className={styles.fieldError}>
+                  {nameError}
+                </span>
+              )}
             </div>
 
-            {/* Sección: Tus datos (nombre, fecha de nacimiento, teléfonos y foto) */}
-            <div className={`${styles.sectionHeader} ${styles.sectionHeaderDivided}`}>
-              <div className={styles.stepBadge}>3</div>
-              <h3 className={styles.sectionTitle}>Tus datos</h3>
-            </div>
-            <div className={styles.gridTwo}>
-              <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="name">
-                  <span>
-                    Nombre completo <span className={styles.required}>*</span>
-                  </span>
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  placeholder="Nombre completo"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                  className={nameError ? styles.inputInvalid : undefined}
-                  aria-invalid={Boolean(nameError)}
-                  aria-describedby={nameError ? 'name-error' : undefined}
-                  required
-                />
-                {nameError && (
-                  <span id="name-error" className={styles.fieldError}>
-                    {nameError}
-                  </span>
-                )}
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="birthDate">
-                  <span>
-                    Fecha de nacimiento <span className={styles.required}>*</span>
-                  </span>
-                </label>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="birthDate">
+                <span>
+                  Fecha de nacimiento <span className={styles.required}>*</span>
+                </span>
+              </label>
+              {/* Se puede escribir dd/mm/aaaa o elegirla en el calendario del navegador */}
+              <div className={styles.dateWrap}>
                 <input
                   id="birthDate"
-                  type="date"
-                  max={maxBirthDate}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd/mm/aaaa"
+                  maxLength={10}
                   value={birthDate}
-                  onChange={(e) => {
-                    setBirthDate(e.target.value);
-                    setBirthDateTouched(true);
-                  }}
+                  onChange={(e) => setBirthDate(formatBirthDateInput(e.target.value))}
                   onBlur={() => setBirthDateTouched(true)}
                   autoComplete="bday"
                   className={birthDateError ? styles.inputInvalid : undefined}
@@ -623,84 +658,131 @@ export default function RegisterPage() {
                   aria-describedby={birthDateError ? 'birthdate-error' : undefined}
                   required
                 />
-                {birthDateError && (
-                  <span id="birthdate-error" className={styles.fieldError} role="alert">
-                    {birthDateError}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  className={styles.calendarBtn}
+                  onClick={() => birthDatePickerRef.current?.showPicker()}
+                  aria-label="Abrir calendario"
+                  title="Abrir calendario"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M3 10h18M8 3v4M16 3v4" />
+                  </svg>
+                </button>
+                <input
+                  ref={birthDatePickerRef}
+                  type="date"
+                  className={styles.datePicker}
+                  max={getMaxAdultBirthDate()}
+                  value={isoBirthDate ?? ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setBirthDate(fromIsoDate(e.target.value));
+                      setBirthDateTouched(true);
+                    }
+                  }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
               </div>
-
-              {/* RF-14. Localidad opcional; se puede cambiar después en Editar perfil */}
-              <div className={`${styles.formGroup} ${styles.gridFull}`}>
-                <label className={styles.label} htmlFor="localityId">Tu localidad</label>
-                <select id="localityId" className={styles.select} value={localityId} onChange={(e) => setLocalityId(e.target.value)}>
-                  <option value="">Selecciona una localidad</option>
-                  {localidades.map((localidad) => (
-                    <option key={localidad.id} value={localidad.id}>{localidad.name}</option>
-                  ))}
-                </select>
-              </div>
+              {birthDateError && (
+                <span id="birthdate-error" className={styles.fieldError} role="alert">
+                  {birthDateError}
+                </span>
+              )}
             </div>
 
-            {/* Teléfonos dinámicos */}
-            <div className={styles.phoneSection}>
-              <div className={styles.phoneHeader}>
-                <span className={styles.label}>
-                  <span>
-                    Teléfonos de contacto <span className={styles.required}>*</span>
-                  </span>
+            {/* RF-14. Localidad obligatoria; se puede cambiar después en Editar perfil */}
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="localityId">
+                <span>
+                  Tu localidad <span className={styles.required}>*</span>
                 </span>
-                <div className={styles.phoneMeta}>
-                  <span>Puedes agregar hasta 3 teléfonos.</span>
-                  {phones.length < 3 && (
-                    <button
-                      type="button"
-                      className={styles.addPhoneBtn}
-                      onClick={handleAddPhone}
-                    >
-                      + Agregar otro teléfono
-                    </button>
-                  )}
-                </div>
-              </div>
+              </label>
+              <select
+                id="localityId"
+                className={`${styles.select} ${localityError ? styles.inputInvalid : ''}`}
+                value={localityId}
+                onChange={(e) => setLocalityId(e.target.value)}
+                aria-invalid={Boolean(localityError)}
+                aria-describedby={localityError ? 'locality-error' : undefined}
+                required
+              >
+                <option value="" disabled>Selecciona una localidad</option>
+                {localidades.map((localidad) => (
+                  <option key={localidad.id} value={localidad.id}>{localidad.name}</option>
+                ))}
+              </select>
+              {localityError && (
+                <span id="locality-error" className={styles.fieldError} role="alert">
+                  {localityError}
+                </span>
+              )}
+            </div>
 
-              {phones.map((phone, idx) => (
-                <div key={idx} className={styles.phoneItem}>
-                <div className={styles.phoneRow}>
-                  <div className={styles.phoneInputWrap}>
-                    <input
-                      type="tel"
-                      placeholder="Número de teléfono"
-                      value={phone.number}
-                      onChange={(e) => handlePhoneChange(idx, e.target.value)}
-                      maxLength={10}
-                      aria-label={`Número de teléfono ${idx + 1}`}
-                      className={phoneErrors[idx] ? styles.inputInvalid : undefined}
-                      aria-invalid={Boolean(phoneErrors[idx])}
-                      aria-describedby={phoneErrors[idx] ? `phone-error-${idx}` : undefined}
-                      required
-                    />
+            {/* Los teléfonos ocupan todo el ancho, debajo de fecha de nacimiento y localidad */}
+            <div className={`${styles.phoneBlock} ${styles.phoneFixed} ${styles.spanAll}`}>
+              <div className={styles.phoneSection}>
+                <div className={styles.phoneHeader}>
+                  <span className={styles.label}>
+                    <span>
+                      Teléfonos de contacto <span className={styles.required}>*</span>
+                    </span>
+                  </span>
+                  <div className={styles.phoneMeta}>
+                    <span>Puedes agregar hasta 3 teléfonos.</span>
+                    {phones.length < 3 && (
+                      <button
+                        type="button"
+                        className={styles.addPhoneBtn}
+                        onClick={handleAddPhone}
+                      >
+                        + Agregar otro teléfono
+                      </button>
+                    )}
                   </div>
+                </div>
 
-                  {/* Con un solo teléfono, ese es el principal: el selector solo aparece desde 2 */}
-                  {phones.length > 1 && (
-                    <label className={styles.phonePrincipalLabel} title="Marcar como teléfono principal">
+                {phones.map((phone, idx) => (
+                  <div key={idx} className={styles.phoneItem}>
+                  <div className={styles.phoneRow}>
+                    <div className={styles.phoneInputWrap}>
+                      <input
+                        type="tel"
+                        placeholder="Número de teléfono"
+                        value={phone.number}
+                        onChange={(e) => handlePhoneChange(idx, e.target.value)}
+                        maxLength={10}
+                        aria-label={`Número de teléfono ${idx + 1}`}
+                        className={phoneErrors[idx] ? styles.inputInvalid : undefined}
+                        aria-invalid={Boolean(phoneErrors[idx])}
+                        aria-describedby={phoneErrors[idx] ? `phone-error-${idx}` : undefined}
+                        required
+                      />
+                    </div>
+
+                    <label
+                      className={`${styles.phonePrincipalLabel} ${phones.length === 1 ? styles.phoneControlDisabled : ''}`}
+                      title="Marcar como teléfono principal"
+                    >
                       <input
                         type="radio"
                         name="principalPhone"
                         checked={phone.principal}
                         onChange={() => handleSetPrincipal(idx)}
+                        disabled={phones.length === 1}
                         className={styles.phoneRadio}
                       />
                       <span>Principal</span>
                     </label>
-                  )}
 
-                  {phones.length > 1 && (
+                    {/* Con un solo teléfono "Principal" y quitar se ven deshabilitados: ya es el principal y no se puede quitar */}
                     <button
                       type="button"
                       className={styles.removePhoneBtn}
                       onClick={() => handleRemovePhone(idx)}
+                      disabled={phones.length === 1}
                       aria-label={`Eliminar teléfono ${idx + 1}`}
                       title="Eliminar teléfono"
                     >
@@ -709,18 +791,25 @@ export default function RegisterPage() {
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
                     </button>
+                  </div>
+                  {phoneErrors[idx] && (
+                    <span id={`phone-error-${idx}`} className={`${styles.fieldError} ${styles.phoneError}`}>
+                      {phoneErrors[idx]}
+                    </span>
                   )}
-                </div>
-                {phoneErrors[idx] && (
-                  <span id={`phone-error-${idx}`} className={`${styles.fieldError} ${styles.phoneError}`}>
-                    {phoneErrors[idx]}
-                  </span>
-                )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
 
-            {/* Foto de perfil (opcional, conectada a image-service) */}
+          {/* Sección: Datos adicionales (foto de perfil, opcional) */}
+          <div className={`${styles.sectionHeader} ${styles.sectionHeaderDivided}`}>
+            <div className={styles.stepBadge}>4</div>
+            <h3 className={styles.sectionTitle}>Datos adicionales</h3>
+          </div>
+          {/* Foto de perfil (opcional, conectada a image-service) */}
+          <div>
             <span className={`${styles.label} ${styles.photoLabel}`}>Foto de perfil</span>
             <div className={styles.photoBox}>
               <div className={styles.avatarMock}>
@@ -779,31 +868,31 @@ export default function RegisterPage() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Error banner */}
-            {error && (
-              <div className={styles.errorBanner} role="alert">
-                <span className={styles.errorIcon}>!</span>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Footer actions */}
-            <div className={styles.actionsFooter}>
-              <Link to="/auth" className={styles.linkBack}>
-                Volver
-              </Link>
-              <button
-                type="submit"
-                className={styles.btnSubmit}
-                disabled={loading}
-              >
-                {loading ? 'Creando cuenta…' : 'Crear mi cuenta'}
-              </button>
+          {/* Error banner */}
+          {error && (
+            <div className={styles.errorBanner} role="alert">
+              <span className={styles.errorIcon}>!</span>
+              <span>{error}</span>
             </div>
-          </form>
+          )}
+
+          {/* Footer actions */}
+          <div className={styles.actionsFooter}>
+            <Link to="/auth" className={styles.linkBack}>
+              Volver
+            </Link>
+            <button
+              type="submit"
+              className={styles.btnSubmit}
+              disabled={loading}
+            >
+              {loading ? 'Creando cuenta…' : 'Crear mi cuenta'}
+            </button>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

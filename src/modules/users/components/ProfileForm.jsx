@@ -32,6 +32,11 @@ function copiarTelefonos(lista) {
       .map(({ number, principal }) => ({ clave: siguienteClave++, number, principal }));
 }
 
+// Teléfonos como texto comparable ("número|principal"), sin importar el orden
+function resumenTelefonos(lista) {
+  return lista.map((phone) => `${phone.number.trim()}|${phone.principal}`).sort().join(',');
+}
+
 function ProfileForm() {
   const { perfil, cargando, error, actualizar, agregarRol } = useProfile();
   const telefonos = usePhones();
@@ -99,7 +104,6 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
 
   const roles = perfil.roles ?? [];
   const esAdmin = roles.includes('ADMIN');
-  const esContratante = roles.includes('CONTRATANTE');
   // Sobre mi cuenta: con un solo rol se ofrece agregar el otro (RF-02); con ambos, pedir dejar cualquiera (RF-13).
   // Después de agregar uno no se muestran más opciones hasta volver a iniciar sesión
   const cambioHecho = rolAgregado !== null;
@@ -121,6 +125,13 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
       : [];
   const ocupadoRol = rolGuardando !== null || enviandoPeticion;
   const errorNombre = name.trim() === '' ? 'El nombre es obligatorio' : null;
+  // RF-14. Las cuentas creadas antes de que la localidad fuera obligatoria deben elegirla para guardar
+  const errorLocalidad = !esAdmin && !localityId ? 'La localidad es obligatoria' : null;
+  // "Guardar cambios" solo se habilita si algo es distinto a lo que está guardado
+  const hayCambios = name.trim() !== (perfil.name ?? '')
+      || String(localityId) !== String(perfil.locality?.id ?? '')
+      || resumenTelefonos(phones) !== resumenTelefonos(telefonos.telefonos)
+      || photoFile !== null;
   const erroresTelefono = phones.map((phone, idx) => {
     if (!enviado) return null;
     const numero = phone.number.trim();
@@ -234,13 +245,14 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
 
   async function manejarEnvio(evento) {
     evento.preventDefault();
+    if (!hayCambios) return;
     setTocado(true);
     setEnviado(true);
     const hayErrorTelefono = phones.some((phone, idx) => {
       const numero = phone.number.trim();
       return !/^3\d{9}$/.test(numero) || phones.slice(0, idx).some((otro) => otro.number.trim() === numero);
     });
-    if (errorNombre || hayErrorTelefono) {
+    if (errorNombre || errorLocalidad || hayErrorTelefono) {
       setTimeout(() => {
         document.querySelector('[aria-invalid="true"]')?.focus();
       }, 0);
@@ -250,7 +262,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
     setGuardado(false);
     setGuardando(true);
     try {
-      await onGuardar({ name: name.trim(), localityId: esContratante && localityId ? Number(localityId) : undefined });
+      await onGuardar({ name: name.trim(), localityId: esAdmin ? undefined : Number(localityId) });
       setNombreVisible(name.trim());
       await guardarTelefonos();
       if (photoFile && perfil?.id) {
@@ -321,7 +333,6 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
             <ProfileHeader
                 nombre={nombreVisible || perfil.name}
                 roles={roles}
-                activo={perfil.accountStatus === 'ACTIVE'}
                 esPropio
                 userId={perfil.id}
                 avatarUrl={photoPreview}
@@ -374,7 +385,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
           )}
 
           {/* Datos sensibles: solo texto, no se pueden modificar */}
-          <div className={styles.encabezado}>
+          <div className={`${styles.encabezado} ${styles.separado}`}>
             <h2 className={reg.sectionTitle}>Datos sensibles</h2>
             <p className={styles.note}>
               <Icon name="lock" size={12} /> Por seguridad, los datos sensibles no se pueden modificar.
@@ -391,14 +402,20 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
             </div>
           </dl>
 
-          <div className={styles.encabezado}>
+          <div className={`${styles.encabezado} ${styles.separado}`}>
             <h2 className={reg.sectionTitle}>Datos personales</h2>
             <p className={styles.note}>
               <span className={reg.required}>*</span> Campos obligatorios
             </p>
           </div>
 
-          <form id={FORM_ID} onSubmit={manejarEnvio} className={styles.form} noValidate>
+          {/* Nombre y localidad en una fila; el admin no tiene localidad y su nombre ocupa todo el ancho */}
+          <form
+              id={FORM_ID}
+              onSubmit={manejarEnvio}
+              className={`${styles.form} ${esAdmin ? '' : styles.formDosColumnas}`}
+              noValidate
+          >
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label htmlFor="name" className={reg.label}>
@@ -429,29 +446,39 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
               {tocado && errorNombre && <p className={styles.fieldError}>{errorNombre}</p>}
             </div>
 
-            {/* RF-14. Solo el contratante tiene localidad; no se puede dejar vacía una vez elegida */}
-            {esContratante && (
+            {/* RF-14. El trabajador y el contratante deben tener localidad */}
+            {!esAdmin && (
                 <div className={styles.field}>
-                  <label htmlFor="localityId" className={reg.label}>Tu localidad</label>
+                  <label htmlFor="localityId" className={reg.label}>
+                    <span>
+                      Tu localidad <span className={reg.required}>*</span>
+                    </span>
+                  </label>
                   <select
                       id="localityId"
-                      className={reg.select}
+                      className={`${reg.select} ${tocado && errorLocalidad ? reg.inputInvalid : ''}`}
                       value={localityId}
                       onChange={(e) => {
                         setLocalityId(e.target.value);
                         setGuardado(false);
                       }}
+                      aria-invalid={Boolean(tocado && errorLocalidad)}
+                      required
                   >
-                    <option value="" disabled={Boolean(perfil.locality)}>Selecciona una localidad</option>
+                    <option value="" disabled>Selecciona una localidad</option>
                     {localidades.map((localidad) => (
                         <option key={localidad.id} value={localidad.id}>{localidad.name}</option>
                     ))}
                   </select>
+                  {tocado && errorLocalidad && <p className={styles.fieldError}>{errorLocalidad}</p>}
                 </div>
             )}
           </form>
 
-          <PhoneList phones={phones} errores={erroresTelefono} onChange={cambiarTelefonos} />
+          {/* El número de teléfono mide lo mismo que el nombre */}
+          <div className={esAdmin ? undefined : reg.phoneBlock}>
+            <PhoneList phones={phones} errores={erroresTelefono} onChange={cambiarTelefonos} />
+          </div>
 
           {guardado && (
               <div className={vista.success}>
@@ -467,7 +494,7 @@ function Contenido({ perfil, telefonos, onGuardar, onAgregarRol, onSalir }) {
             <button type="button" className={reg.linkBack} onClick={onSalir}>
               {guardado ? 'Volver al perfil' : 'Cancelar'}
             </button>
-            <button type="submit" form={FORM_ID} className={reg.btnSubmit} disabled={guardando}>
+            <button type="submit" form={FORM_ID} className={reg.btnSubmit} disabled={guardando || !hayCambios}>
               {guardando ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>

@@ -5,7 +5,7 @@ import EmptyState from './ui/EmptyState';
 import Icon from './ui/Icon';
 import StatusMessage from './ui/StatusMessage';
 import ui from './ui/ui.module.css';
-import { IMAGE_FORMATS, validateImageFile } from '../services/imagesClient';
+import { IMAGE_FORMATS, resolveGalleryImageUrl, validateImageFile } from '../services/imagesClient';
 import { useMyWorker } from '../hooks/useMyWorker';
 import { deleteGalleryPhoto, uploadGalleryPhoto } from '../services/workersService';
 import ProfileStatus from './ProfileStatus';
@@ -95,7 +95,7 @@ function GalleryPage() {
             </div>
           ) : profile.photos.map((photo) => (
             <article className={`${ui.infoCard} ${styles.photoCard}`} key={photo.id}>
-              <img alt={photo.description || 'Trabajo realizado'} src={photo.url} />
+              <img alt={photo.description || 'Trabajo realizado'} src={resolveGalleryImageUrl(photo.url)} />
               <div>
                 <span>{formatDate(photo.uploadedAt.slice(0, 10))}</span>
                 <p>{photo.description || 'Sin descripción'}</p>

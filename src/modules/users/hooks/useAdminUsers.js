@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ACCESS_TOKEN } from '../config';
 import { listUsers, getUser, changeStatus, removeRole } from '../services/adminUserService';
 
 // Listado de usuarios para /admin/users
@@ -9,7 +8,7 @@ export function useAdminUsers() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    listUsers(ACCESS_TOKEN)
+    listUsers()
       .then((data) => setUsers(data))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -27,7 +26,7 @@ export function useAdminUser(id) {
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    getUser(id, ACCESS_TOKEN)
+    getUser(id)
       .then((data) => setUser(data))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -40,7 +39,7 @@ export function useAdminUser(id) {
   async function updateStatus(action, reason) {
     setActionError(null);
     try {
-      const updated = await changeStatus(id, action, reason, ACCESS_TOKEN);
+      const updated = await changeStatus(id, action, reason);
       setUser(updated);
       return true;
     } catch (e) {
@@ -52,7 +51,7 @@ export function useAdminUser(id) {
   async function quitarRol(rol) {
     setActionError(null);
     try {
-      const updated = await removeRole(id, rol, ACCESS_TOKEN);
+      const updated = await removeRole(id, rol);
       setUser(updated);
       return true;
     } catch (e) {
