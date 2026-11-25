@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import Button from '../../core/design-system/Button';
 import { ADDRESS_NOTE_MAX, DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import { useTrades } from '../hooks/useTrades';
 import { useZones } from '../hooks/useZones';
 import {
   EMPTY_FORM,
+  availableDates,
   composeAddress,
+  describeSchedule,
+  formatAvailableDate,
   formatSlot,
   normalizeDigits,
   normalizeNote,
@@ -16,6 +20,26 @@ import {
 import { CalendarIcon, ClockIcon, MapPinIcon } from './icons';
 import PhotoPicker from './PhotoPicker';
 import styles from './RequestDetailsStep.module.css';
+
+/** Oficios agrupados por categoría, en orden alfabético; "Otros oficios" al final. */
+function groupByCategory(trades) {
+  const groups = new Map();
+  for (const trade of trades) {
+    if (!groups.has(trade.category)) {
+      groups.set(trade.category, []);
+    }
+    groups.get(trade.category).push(trade);
+  }
+  return Array.from(groups, ([category, items]) => ({
+    category,
+    items: [...items].sort((a, b) => a.name.localeCompare(b.name, 'es')),
+  })).sort((a, b) => {
+    if (a.category === 'Otros oficios' || b.category === 'Otros oficios') {
+      return a.category === 'Otros oficios' ? 1 : -1;
+    }
+    return a.category.localeCompare(b.category, 'es');
+  });
+}
 
 function groupByLocality(zones) {
   const groups = new Map();
@@ -135,12 +159,20 @@ function AddressFields({ values, onChange, error }) {
   );
 }
 
-function RequestDetailsStep({ values, onChange, onSubmit }) {
+function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
   const [submitted, setSubmitted] = useState(false);
-  const errors = validateDetails(values);
+  const errors = validateDetails(values, new Date(), locked.schedule);
   const visible = submitted ? errors : {};
   const zones = useZones();
-  const groups = groupByLocality(zones.items);
+  // Desde Contratar solo aparecen los barrios donde trabaja el trabajador elegido.
+  const allowedZones = locked.zoneIds
+    ? zones.items.filter((zone) => locked.zoneIds.includes(zone.id))
+    : zones.items;
+  const groups = groupByLocality(allowedZones);
+  const trades = useTrades();
+  const tradeGroups = groupByCategory(trades.items);
+  // Desde Contratar solo se pueden elegir días en los que el trabajador tiene franjas disponibles.
+  const scheduledDates = locked.schedule ? availableDates(locked.schedule) : [];
 
   const bind = (name) => ({
     value: values[name],
@@ -158,18 +190,62 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
     onSubmit();
   };
 
+  const changeDate = (date) => {
+    onChange(
+      timeSlots(date, new Date(), locked.schedule).includes(values.time) ? { date } : { date, time: '' },
+    );
+  };
+
   return (
     <form id={DETAILS_FORM_ID} className={styles.form} onSubmit={handleSubmit} noValidate>
       <div className={styles.layout}>
         <div className={styles.column}>
           <Field
+            id="field-tradeId"
+            label="Trabajo u oficio"
+            required
+            error={visible.tradeId}
+            hint={locked.trade ? 'Es el oficio del trabajador que elegiste.' : undefined}
+          >
+            <select
+              {...fieldProps('field-tradeId', visible.tradeId, { required: true, hint: locked.trade })}
+              disabled={locked.trade}
+              value={values.tradeId}
+              onChange={(event) => {
+                const trade = trades.items.find((item) => item.id === event.target.value);
+                onChange({ tradeId: trade ? trade.id : '', trade: trade ? trade.name : '' });
+              }}
+            >
+              <option value="">{trades.status === 'loading' ? 'Cargando oficios' : 'Selecciona'}</option>
+              {tradeGroups.map((group) => (
+                <optgroup key={group.category} label={group.category}>
+                  {group.items.map((trade) => (
+                    <option key={trade.id} value={trade.id}>
+                      {trade.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </Field>
+          {trades.status === 'error' && (
+            <div className={styles.hint} role="alert">
+              <p>No pudimos cargar los oficios.</p>
+              <Button type="button" variant="secondary" onClick={trades.retry}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+
+          <Field
             id="field-description"
-            label="¿Qué necesitas resolver?"
+            label="Describe el problema"
             required
             error={visible.description}
           >
             <textarea
               rows={4}
+              placeholder="Ej.: El lavamanos del baño tiene una fuga debajo del sifón."
               {...fieldProps('field-description', visible.description, { required: true })}
               {...bind('description')}
             />
@@ -185,9 +261,10 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
             required
             error={visible.neighborhood}
             icon={<MapPinIcon size={18} />}
+            hint={locked.zoneIds ? 'Solo aparecen los barrios donde trabaja el trabajador que elegiste.' : undefined}
           >
             <select
-              {...fieldProps('field-neighborhood', visible.neighborhood, { required: true })}
+              {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: Boolean(locked.zoneIds) })}
               value={values.neighborhood}
               onChange={(event) => {
                 const name = event.target.value;
@@ -244,16 +321,28 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
               error={visible.date}
               icon={<CalendarIcon size={18} />}
             >
-              <input
-                type="date"
-                min={todayISO()}
-                {...fieldProps('field-date', visible.date, { required: true })}
-                value={values.date}
-                onChange={(event) => {
-                  const date = event.target.value;
-                  onChange(timeSlots(date).includes(values.time) ? { date } : { date, time: '' });
-                }}
-              />
+              {locked.schedule ? (
+                <select
+                  {...fieldProps('field-date', visible.date, { required: true })}
+                  value={values.date}
+                  onChange={(event) => changeDate(event.target.value)}
+                >
+                  <option value="">Selecciona un día disponible</option>
+                  {scheduledDates.map((date) => (
+                    <option key={date} value={date}>
+                      {formatAvailableDate(date)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="date"
+                  min={todayISO()}
+                  {...fieldProps('field-date', visible.date, { required: true })}
+                  value={values.date}
+                  onChange={(event) => changeDate(event.target.value)}
+                />
+              )}
             </Field>
             <Field
               id="field-time"
@@ -267,7 +356,7 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
                 {...bind('time')}
               >
                 <option value="">Selecciona</option>
-                {timeSlots(values.date).map((slot) => (
+                {timeSlots(values.date, new Date(), locked.schedule).map((slot) => (
                   <option key={slot} value={slot}>
                     {formatSlot(slot)}
                   </option>
@@ -275,6 +364,12 @@ function RequestDetailsStep({ values, onChange, onSubmit }) {
               </select>
             </Field>
           </div>
+          {locked.schedule && (
+            <p className={styles.hint}>
+              Horario del trabajador: {describeSchedule(locked.schedule)}. Solo puedes elegir días y horas dentro de
+              ese horario.
+            </p>
+          )}
         </div>
       </div>
 

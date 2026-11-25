@@ -30,11 +30,35 @@ async function postMultipart(path, form, token) {
   return text ? JSON.parse(text) : null;
 }
 
+function asPhotoFile(photo) {
+  if (photo?.file) {
+    return photo.file;
+  }
+  if (!photo?.dataUrl) {
+    return null;
+  }
+
+  const [header, encoded] = photo.dataUrl.split(',');
+  if (!encoded) {
+    return null;
+  }
+
+  const mime = /data:([^;]+);base64/.exec(header)?.[1] || photo.type || 'application/octet-stream';
+  const binary = atob(encoded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new File([bytes], photo.name || 'foto', { type: mime });
+}
+
 export const createRequestService = {
   create: async (payload, photos, token) => {
     const form = new FormData();
     form.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-    photos.forEach((photo) => form.append('images', photo.file));
+    photos.forEach((photo) => {
+      const file = asPhotoFile(photo);
+      if (file) {
+        form.append('images', file);
+      }
+    });
 
     const result = await postMultipart('/requests', form, token);
     const sent = Array.isArray(result) ? result.length : (result?.workersId?.length ?? 0);

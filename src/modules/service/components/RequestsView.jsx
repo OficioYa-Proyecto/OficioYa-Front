@@ -1,16 +1,25 @@
 import ErrorMessage from '../../core/components/ErrorMessage';
 import { getSession } from '../../core/lib/session';
 import { useRequests } from '../hooks/useRequests';
+import { useUserNames } from '../hooks/useUserNames';
 import { actionsFor } from '../requestActions';
 import RequestCard from './RequestCard';
 import styles from './RequestsView.module.css';
 
 const ROLE_LABELS = { TRABAJADOR: 'Trabajador', CONTRATANTE: 'Contratante' };
 
+// De quién se muestra el nombre en la tarjeta: el contratante ve al trabajador y viceversa.
+const PERSON = {
+  CONTRATANTE: { label: 'Trabajador', idField: 'workerId' },
+  TRABAJADOR: { label: 'Contratante', idField: 'contractorId' },
+};
+
 const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
 
 function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
   const { requests, loading, error, act } = useRequests(role);
+  const person = PERSON[role];
+  const names = useUserNames(requests.map((request) => request[person.idField]));
 
   return (
     <section className={styles.list}>
@@ -30,6 +39,8 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
           request={request}
           actions={actionsFor(role, request.state)}
           onAction={act}
+          personLabel={person.label}
+          personName={names[request[person.idField]] ?? ''}
           extra={renderExtra ? renderExtra(request) : null}
         />
       ))}

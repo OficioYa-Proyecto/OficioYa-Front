@@ -80,7 +80,16 @@ export function deleteImage(id, { token } = {}) {
 /** URL absoluta de la imagen (Worker exige http/https). Falla si falta VITE_API_URL. */
 export function imageUrl(id) {
   if (!API_ORIGIN) throw new Error('Falta configurar VITE_API_URL: no se puede guardar la foto.');
-  return `${API_ORIGIN}${IMAGES_BASE}/${id}`;
+  return `${IMAGES_BASE}/${id}`;
+}
+
+/** Resuelve rutas relativas y URLs guardadas cuando el origen se duplicaba. */
+export function resolveGalleryImageUrl(url) {
+  if (typeof url !== 'string' || !API_ORIGIN) return url;
+  if (url.startsWith('/api/v1/images/')) return API_ORIGIN + url;
+
+  const duplicatedBase = API_ORIGIN + IMAGES_BASE + '/';
+  return url.startsWith(duplicatedBase) ? url.slice(API_ORIGIN.length) : url;
 }
 
 /** Id de la imagen si la URL es de este servicio; null si es una URL externa. */
