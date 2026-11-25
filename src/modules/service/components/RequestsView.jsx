@@ -1,4 +1,5 @@
 import ErrorMessage from '../../core/components/ErrorMessage';
+import { useSearchParams } from 'react-router-dom';
 import { getSession } from '../../core/lib/session';
 import { useRequests } from '../hooks/useRequests';
 import { useUserNames } from '../hooks/useUserNames';
@@ -18,6 +19,8 @@ const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
 
 function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
   const { requests, loading, error, act } = useRequests(role);
+  const [searchParams] = useSearchParams();
+  const autoRateId = searchParams.get('calificar');
   const person = PERSON[role];
   const names = useUserNames(requests.map((request) => request[person.idField]));
 
@@ -41,7 +44,7 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
           onAction={act}
           personLabel={person.label}
           personName={names[request[person.idField]] ?? ''}
-          extra={renderExtra ? renderExtra(request) : null}
+          extra={renderExtra ? renderExtra(request, autoRateId === request.id) : null}
         />
       ))}
     </section>

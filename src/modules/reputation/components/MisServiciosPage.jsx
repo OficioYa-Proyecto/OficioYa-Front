@@ -10,9 +10,9 @@ function MisServiciosPage() {
       eyebrow="Mis servicios"
       title="Mis trabajos"
       emptyText="Todavía no tienes trabajos asignados."
-      renderExtra={(request) =>
+      renderExtra={(request, autoOpen) =>
         request.state === 'COMPLETED' ? (
-          <CalificarServicio request={request} rol="TRABAJADOR" />
+          <CalificarServicio request={request} rol="TRABAJADOR" autoOpen={autoOpen} />
         ) : null
       }
     />

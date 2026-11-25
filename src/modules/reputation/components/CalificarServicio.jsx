@@ -29,12 +29,12 @@ function guardarCalificado(userId, solicitudId) {
 // Botón "Calificar" de un servicio cumplido. rol = el rol de quien califica:
 // el contratante califica al trabajador y el trabajador al contratante.
 // La reseña se envía a Reputation con el id de la solicitud (el mismo que Service le avisó al cumplirse).
-function CalificarServicio({ request, rol }) {
+function CalificarServicio({ request, rol, autoOpen = false }) {
   const sesion = getSession();
   const [calificado, setCalificado] = useState(() =>
     leerCalificados(sesion?.userId).includes(request.id),
   );
-  const [abierto, setAbierto] = useState(false);
+  const [abierto, setAbierto] = useState(() => Boolean(autoOpen && !calificado));
 
   function alCalificar() {
     guardarCalificado(sesion?.userId, request.id);

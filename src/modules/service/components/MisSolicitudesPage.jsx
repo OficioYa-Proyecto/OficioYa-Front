@@ -9,9 +9,9 @@ function MisSolicitudesPage() {
       eyebrow="Mis solicitudes"
       title="Solicitudes de servicio"
       emptyText="No tienes solicitudes todavía."
-      renderExtra={(request) =>
+      renderExtra={(request, autoOpen) =>
         request.state === 'COMPLETED' ? (
-          <CalificarServicio request={request} rol="CONTRATANTE" />
+          <CalificarServicio request={request} rol="CONTRATANTE" autoOpen={autoOpen} />
         ) : null
       }
     />
