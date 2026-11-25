@@ -216,14 +216,17 @@ function Navbar() {
                     <p className={styles.notifEmpty}>Sin notificaciones nuevas</p>
                   ) : (
                     notifItems.map((item, index) => (
-                      <Link
+                      <button
                         key={`${item.id}-${index}`}
-                        to={item.link}
+                        type="button"
                         className={`${styles.notifItem} ${item.color === 'blue' ? styles.notifBlue : styles.notifPrimary}`}
-                        onClick={() => setNotifOpen(false)}
+                        onClick={() => {
+                          setNotifOpen(false);
+                          navigate(item.link);
+                        }}
                       >
                         {item.text}
-                      </Link>
+                      </button>
                     ))
                   )}
                 </div>
