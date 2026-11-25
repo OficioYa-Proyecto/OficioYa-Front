@@ -1,4 +1,5 @@
 import Button from '../../core/design-system/Button';
+import RequestPhotos from './RequestPhotos';
 import styles from './RequestCard.module.css';
 
 const STATE_META = {
@@ -66,6 +67,8 @@ function RequestCard({ request, actions, onAction, extra = null, personLabel = '
         <h3>{deriveTitle(request.description)}</h3>
         <span className={`${styles.badge} ${styles[meta.tone]}`}>{meta.label}</span>
       </div>
+
+      <RequestPhotos requestId={request.id} rootId={request.rootId} />
 
       <dl className={styles.facts}>
         {personName && (

@@ -50,6 +50,9 @@ function CreateRequestPage() {
   const [searchingOthers, setSearchingOthers] = useState(false);
   const hasPreselection = Boolean(preselectedWorkerId) && !searchingOthers;
   const { sending, error: sendError, result, send, reset } = useCreateRequest(token);
+  // La confirmación se muestra de inmediato; el envío real termina en segundo plano.
+  const [pendingResult, setPendingResult] = useState(null);
+  const sentResult = result ?? pendingResult;
 
   useEffect(() => {
     warmWorkerIds();
@@ -126,8 +129,13 @@ function CreateRequestPage() {
   });
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
   const handleSend = async () => {
-    if (await send(form)) {
-      setStep(SENT);
+    setPendingResult({ sent: form.workers.length, pending: true });
+    setStep(SENT);
+    const ok = await send(form);
+    setPendingResult(null);
+    // Si el envío falla, volvemos a la revisión con el error del hook.
+    if (!ok) {
+      setStep(REVIEW);
     }
   };
   const searchOtherWorkers = () => {
@@ -138,6 +146,7 @@ function CreateRequestPage() {
   };
   const restart = () => {
     reset();
+    setPendingResult(null);
     setPreselectedWorker(null);
     setSearchingOthers(false);
     setForm(EMPTY_FORM);
@@ -197,7 +206,9 @@ function CreateRequestPage() {
         {step === REVIEW && (
           <ReviewStep values={form} onEditWorkers={goBack} busy={sending} error={sendError} />
         )}
-        {step === SENT && result && <SentStep values={form} result={result} />}
+        {step === SENT && sentResult && (
+          <SentStep values={form} result={sentResult} pending={Boolean(sentResult.pending)} />
+        )}
       </section>
 
       <footer className={styles.footer}>
