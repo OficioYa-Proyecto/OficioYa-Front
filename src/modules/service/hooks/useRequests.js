@@ -3,7 +3,7 @@ import { requestsService } from '../services/requestsService';
 
 // Carga las solicitudes del usuario según su rol y expone las acciones sobre ellas.
 // role: 'TRABAJADOR' | 'CONTRATANTE'
-// action: 'accept' | 'reject' | 'complete' | 'acceptConflict' | 'cancel' | 'remove'
+// action: 'accept' | 'reject' | 'complete' | 'acceptConflict' | 'cancel'
 export function useRequests(role) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
