@@ -56,7 +56,7 @@ function Icon({ children }) {
 
 // Tarjeta de una solicitud: mismo lenguaje visual que las notificaciones del mockup
 // (título, fecha, hora y ubicación con íconos, y el estado como etiqueta).
-function RequestCard({ request, actions, onAction, extra = null }) {
+function RequestCard({ request, actions, onAction, extra = null, personLabel = '', personName = '' }) {
   const meta = STATE_META[request.state] ?? { label: request.state, tone: 'muted' };
   const { date, time } = splitSchedule(request.scheduledDateTime);
 
@@ -68,6 +68,18 @@ function RequestCard({ request, actions, onAction, extra = null }) {
       </div>
 
       <dl className={styles.facts}>
+        {personName && (
+          <div className={`${styles.fact} ${styles.wide}`}>
+            <Icon>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </Icon>
+            <div>
+              <dt>{personLabel}</dt>
+              <dd>{personName}</dd>
+            </div>
+          </div>
+        )}
         <div className={styles.fact}>
           <Icon>
             <rect x="3" y="4" width="18" height="18" rx="2" />
