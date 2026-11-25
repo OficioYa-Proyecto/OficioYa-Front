@@ -127,7 +127,16 @@ function Navbar() {
           .then((list) => {
             (Array.isArray(list) ? list : [])
               .filter((r) => r?.state === 'PENDING')
-              .forEach((r) => items.push({ id: r.id, text: 'Nueva solicitud de servicio', link: '/mis-servicios', color: 'blue' }));
+              .forEach((r) =>
+                items.push({
+                  id: r.id,
+                  title: 'Servicio entrante',
+                  description: r?.description || 'Nueva reparación cerca de ti',
+                  actionLabel: 'Ver solicitud',
+                  link: '/mis-servicios',
+                  color: 'blue',
+                }),
+              );
           })
           .catch(() => {}),
       );
@@ -139,7 +148,16 @@ function Navbar() {
           .then((list) => {
             (Array.isArray(list) ? list : [])
               .filter((r) => r?.state === 'COMPLETED')
-              .forEach((r) => items.push({ id: r.id, text: 'Trabajo completado por calificar', link: `/solicitudes?calificar=${r.id}`, color: 'primary' }));
+              .forEach((r) =>
+                items.push({
+                  id: r.id,
+                  title: 'Trabajo completado',
+                  description: 'El trabajador marcó el servicio como terminado.',
+                  actionLabel: 'Calificar el servicio',
+                  link: `/solicitudes?calificar=${r.id}`,
+                  color: 'primary',
+                }),
+              );
           })
           .catch(() => {}),
       );
@@ -216,17 +234,23 @@ function Navbar() {
                     <p className={styles.notifEmpty}>Sin notificaciones nuevas</p>
                   ) : (
                     notifItems.map((item, index) => (
-                      <button
+                      <div
                         key={`${item.id}-${index}`}
-                        type="button"
                         className={`${styles.notifItem} ${item.color === 'blue' ? styles.notifBlue : styles.notifPrimary}`}
-                        onClick={() => {
-                          setNotifOpen(false);
-                          navigate(item.link);
-                        }}
                       >
-                        {item.text}
-                      </button>
+                        <span className={styles.notifItemTitle}>{item.title}</span>
+                        <span className={styles.notifItemDesc}>{item.description}</span>
+                        <button
+                          type="button"
+                          className={styles.notifActionBtn}
+                          onClick={() => {
+                            setNotifOpen(false);
+                            navigate(item.link);
+                          }}
+                        >
+                          {item.actionLabel}
+                        </button>
+                      </div>
                     ))
                   )}
                 </div>
