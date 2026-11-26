@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ACCESS_TOKEN } from '../config';
 import {
   listarPeticionesRol,
   obtenerMisPeticionesRol,
@@ -7,27 +6,25 @@ import {
   resolverPeticionRol,
 } from '../services/roleRequestService';
 
-// RF-13. Peticiones propias (Editar perfil); la más reciente primero
 export function useMisPeticionesRol() {
   const [peticiones, setPeticiones] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    obtenerMisPeticionesRol(ACCESS_TOKEN)
+    obtenerMisPeticionesRol()
       .then(setPeticiones)
       .catch(() => setPeticiones([]))
       .finally(() => setCargando(false));
   }, []);
 
   async function pedir(rol, razon) {
-    const nueva = await pedirQuitarRol(rol, razon, ACCESS_TOKEN);
+    const nueva = await pedirQuitarRol(rol, razon);
     setPeticiones((actuales) => [nueva, ...actuales]);
   }
 
   return { peticiones, cargando, pedir };
 }
 
-// RF-13. Peticiones para el administrador (bandeja y detalle de usuario)
 export function usePeticionesRol({ status, userId } = {}) {
   const [peticiones, setPeticiones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +34,7 @@ export function usePeticionesRol({ status, userId } = {}) {
 
   useEffect(() => {
     let vigente = true;
-    listarPeticionesRol({ status, userId }, ACCESS_TOKEN)
+    listarPeticionesRol({ status, userId })
       .then((data) => {
         if (!vigente) return;
         setPeticiones(data);
@@ -52,9 +49,9 @@ export function usePeticionesRol({ status, userId } = {}) {
 
   const recargar = () => setVersion((v) => v + 1);
 
-  // Lanza el error para que la tarjeta lo muestre; si se resolvió, sale del filtro de pendientes
   async function resolver(id, accion, motivo) {
-    const actualizada = await resolverPeticionRol(id, accion, motivo, ACCESS_TOKEN);
+    const actualizada = await resolverPeticionRol(id, accion, motivo);
+    window.dispatchEvent(new Event('oy-requests-changed'));
     setPeticiones((actuales) => actuales
       .map((p) => (p.id === id ? actualizada : p))
       .filter((p) => !status || p.status === status));

@@ -18,16 +18,4 @@ export const requestsService = {
 
   // CONTRATANTE o TRABAJADOR
   cancel: (id) => request(`${BASE}/${id}/cancel`, { method: 'PATCH' }),
-
-  // CONTRATANTE. El back responde texto plano ("Request deleted"), no JSON,
-  // y httpClient intenta leerlo como JSON: ese SyntaxError no es un fallo real.
-  remove: async (id) => {
-    try {
-      await request(`${BASE}/${id}`, { method: 'DELETE' });
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) {
-        throw error;
-      }
-    }
-  },
 };

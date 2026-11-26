@@ -5,9 +5,12 @@ export function usePerfilTrabajador(trabajadorId, token) {
   const [intento, setIntento] = useState(0);
   const [respuesta, setRespuesta] = useState(null);
   const clave = `${trabajadorId}-${intento}`;
-  const cargando = respuesta?.clave !== clave;
+  const cargando = !trabajadorId || respuesta?.clave !== clave;
 
   useEffect(() => {
+    if (!trabajadorId) {
+      return undefined;
+    }
     let vigente = true;
     Promise.all([
       reputationService.obtenerReputacion(trabajadorId, token),

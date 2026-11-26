@@ -32,6 +32,47 @@
   content: ' ✓';
 }
 
+/* Categorías desplegables con sus oficios */
+.categorias {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.categoria {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.categoriaElegida {
+  color: var(--color-accent);
+}
+
+.flecha {
+  flex: none;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.oficiosCategoria {
+  padding: 0 0 6px 12px;
+  border-left: 2px solid var(--color-border);
+}
+
 .interruptor {
   display: flex;
   align-items: center;

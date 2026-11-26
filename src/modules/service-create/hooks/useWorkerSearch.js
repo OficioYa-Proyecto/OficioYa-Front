@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { workersService } from '../services/workersService';
 
 const LOADING = { status: 'loading', workers: [], message: '', error: '' };
 
-export function useWorkerSearch({ description, neighborhoodId, date, time }) {
+export function useWorkerSearch({ tradeId, zoneIds, date, time }) {
   const [state, setState] = useState(LOADING);
   const [attempt, setAttempt] = useState(0);
+  const zoneIdsKey = JSON.stringify(zoneIds ?? []);
+  const searchZoneIds = useMemo(() => JSON.parse(zoneIdsKey), [zoneIdsKey]);
 
   useEffect(() => {
     let cancelled = false;
     workersService
-      .search({ description, neighborhoodId, date, time })
+      .search({ tradeId, zoneIds: searchZoneIds, date, time })
       .then(({ workers, message }) => {
         if (!cancelled) {
           setState({ status: 'ready', workers, message, error: '' });
@@ -24,7 +26,7 @@ export function useWorkerSearch({ description, neighborhoodId, date, time }) {
     return () => {
       cancelled = true;
     };
-  }, [description, neighborhoodId, date, time, attempt]);
+  }, [tradeId, searchZoneIds, date, time, attempt]);
 
   const retry = useCallback(() => {
     setState(LOADING);

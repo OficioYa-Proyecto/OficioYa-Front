@@ -1,12 +1,14 @@
-import { deriveTitle, formatSchedule, getInitials } from '../requestForm';
-import { imagesService } from '../services/imagesService';
+import { cleanNote, deriveTitle, formatSchedule } from '../requestForm';
 import { BellIcon, CalendarIcon, ImageIcon, MapPinIcon, StarIcon } from './icons';
+import WorkerAvatar from './WorkerAvatar';
 import styles from './ReviewStep.module.css';
 
 function ReviewStep({ values, onEditWorkers, busy, error }) {
   const photo = values.photos[0];
-  const neighborhood = values.neighborhood.trim();
+  const locality = String(values.locality ?? '').trim();
+  const neighborhood = String(values.neighborhood ?? '').trim();
   const address = values.exactAddress.trim();
+  const note = cleanNote(values.addressNote);
   const count = values.workers.length;
 
   return (
@@ -20,10 +22,12 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
           </span>
         )}
         <div className={styles.heroText}>
-          <p className={styles.heroEyebrow}>Servicio solicitado</p>
+          <p className={styles.heroEyebrow}>
+            Servicio solicitado{values.trade ? ` · ${values.trade}` : ''}
+          </p>
           <h2>{deriveTitle(values.description)}</h2>
           <p className={styles.heroMeta}>
-            {neighborhood} · {formatSchedule(values.date, values.time, { short: true })}
+            {[neighborhood, locality].filter(Boolean).join(', ')} · {formatSchedule(values.date, values.time, { short: true })}
           </p>
         </div>
       </section>
@@ -44,9 +48,7 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
           <ul className={styles.list}>
             {values.workers.map((worker) => (
               <li key={worker.id} className={styles.workerRow}>
-                <span className={styles.avatar} aria-hidden="true">
-                  {getInitials(worker.name)}
-                </span>
+                <WorkerAvatar worker={worker} className={styles.avatar} />
                 <span className={styles.workerText}>
                   <strong>{worker.name}</strong>
                   <span>{worker.trade}</span>
@@ -77,10 +79,19 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
               <span className={styles.detailText}>
                 <span className={styles.detailLabel}>Dirección</span>
                 <span className={styles.detailValue}>
-                  {address}, {neighborhood}
+                  {address}, {[neighborhood, locality].filter(Boolean).join(', ')}
                 </span>
               </span>
             </li>
+            {note && (
+              <li className={styles.detailRow}>
+                <MapPinIcon size={18} />
+                <span className={styles.detailText}>
+                  <span className={styles.detailLabel}>Información adicional</span>
+                  <span className={styles.detailValue}>{note}</span>
+                </span>
+              </li>
+            )}
             <li className={styles.detailRow}>
               <CalendarIcon size={18} />
               <span className={styles.detailText}>
@@ -106,13 +117,6 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
           </ul>
         </section>
       </div>
-
-      {values.photos.length > 0 && !imagesService.connected && (
-        <p className={styles.notice}>
-          Las fotos aún no se pueden enviar: el servicio de imágenes del orquestador no está
-          conectado. La solicitud sí se enviará.
-        </p>
-      )}
 
       <p className={styles.info}>
         <BellIcon size={18} />

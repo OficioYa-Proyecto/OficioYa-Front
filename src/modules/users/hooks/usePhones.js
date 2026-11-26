@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ACCESS_TOKEN } from '../config';
 import * as profileService from '../services/profileService';
 
 export function usePhones() {
@@ -8,7 +7,7 @@ export function usePhones() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    profileService.obtenerMisTelefonos(ACCESS_TOKEN)
+    profileService.obtenerMisTelefonos()
       .then(setTelefonos)
       .catch((e) => setError(e.message))
       .finally(() => setCargando(false));
@@ -20,9 +19,9 @@ export function usePhones() {
     return lista;
   }
 
-  const agregar = (numero) => guardar(profileService.agregarTelefono(numero, ACCESS_TOKEN));
-  const cambiar = (id, numero) => guardar(profileService.cambiarTelefono(id, numero, ACCESS_TOKEN));
-  const eliminar = (id) => guardar(profileService.eliminarTelefono(id, ACCESS_TOKEN));
+  const agregar = (numero) => guardar(profileService.agregarTelefono(numero));
+  const cambiar = (id, numero) => guardar(profileService.cambiarTelefono(id, numero));
+  const eliminar = (id) => guardar(profileService.eliminarTelefono(id));
 
   return { telefonos, cargando, error, agregar, cambiar, eliminar };
 }

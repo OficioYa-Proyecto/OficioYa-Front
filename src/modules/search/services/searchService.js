@@ -9,6 +9,19 @@ function criterios(filtros) {
   );
 }
 
+// Search recibe listas como parámetros repetidos: barrioIds=10&barrioIds=11.
+function consulta(filtros) {
+  const params = new URLSearchParams();
+  for (const [clave, valor] of Object.entries(criterios(filtros))) {
+    if (Array.isArray(valor)) {
+      valor.filter((item) => item !== '' && item != null).forEach((item) => params.append(clave, item));
+    } else {
+      params.append(clave, valor);
+    }
+  }
+  return params;
+}
+
 /** Zonas reales del Orchestrator: [{ id, name, locality }]. Son los ids que Worker guarda por trabajador. */
 export function listarZonas(token) {
   return request('/zones', { token });
@@ -18,14 +31,24 @@ export function listarOficios(token) {
   return request(`${BASE}/oficios`, { token });
 }
 
-export function buscarPorOficio(oficioId, filtros, token) {
+/** Todos los trabajadores activos, sin elegir oficio. */
+export function buscarTodos(filtros, token) {
   const consulta = new URLSearchParams(criterios(filtros));
-  return request(`${BASE}/oficios/${oficioId}/trabajadores?${consulta}`, { token });
+  return request(`${BASE}/trabajadores?${consulta}`, { token });
+}
+
+export function buscarPorOficio(oficioId, filtros, token) {
+  return request(`${BASE}/oficios/${oficioId}/trabajadores?${consulta(filtros)}`, { token });
 }
 
 export function buscarPorTexto(texto, filtros, token) {
   const { barrioIds, ...resto } = criterios(filtros);
-  const cuerpo = { ...resto, ...(barrioIds ? { barrioIds: [barrioIds] } : {}) };
+  const ids = Array.isArray(barrioIds)
+    ? barrioIds.filter((id) => id !== '' && id != null)
+    : barrioIds
+      ? [barrioIds]
+      : [];
+  const cuerpo = { ...resto, ...(ids.length > 0 ? { barrioIds: ids } : {}) };
   return request(`${BASE}/lenguaje-natural`, {
     method: 'POST',
     body: { texto, criterios: cuerpo },

@@ -96,6 +96,82 @@ function SelectorZona({ zonas, valor, alElegir }) {
   );
 }
 
+/** Agrupa los oficios por su categoría de Worker; los que no traen categoría van al final, en "Otros oficios". */
+function oficiosPorCategoria(oficios) {
+  const grupos = new Map();
+  oficios.forEach((oficio) => {
+    const clave = oficio.categoria?.id ?? 'sin-categoria';
+    const grupo = grupos.get(clave) ?? { id: clave, nombre: oficio.categoria?.nombre ?? 'Otros oficios', oficios: [] };
+    grupo.oficios.push(oficio);
+    grupos.set(clave, grupo);
+  });
+  return [...grupos.values()].sort((a, b) => {
+    if (a.id === 'sin-categoria' || b.id === 'sin-categoria') {
+      return a.id === 'sin-categoria' ? 1 : -1;
+    }
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
+}
+
+function SelectorCategoria({ oficios, oficioId, alElegir }) {
+  const grupos = oficiosPorCategoria(oficios);
+  const grupoElegido = grupos.find((grupo) => grupo.oficios.some((oficio) => oficio.id === oficioId))?.id;
+  const [abierta, setAbierta] = useState(null);
+  const visible = abierta ?? grupoElegido;
+
+  // "Todos los oficios" quita el oficio elegido y vuelve a mostrar a todos los trabajadores.
+  const todos = (
+    <Opciones opciones={[{ valor: '', nombre: 'Todos los oficios' }]} valor={oficioId ?? ''} alElegir={() => alElegir(null)} />
+  );
+
+  // Sin categorías (por ejemplo, si Search aún no las entrega) se muestra la lista de oficios como antes.
+  if (grupos.length <= 1) {
+    return (
+      <>
+        {todos}
+        <Opciones
+          opciones={oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
+          valor={oficioId ?? ''}
+          alElegir={alElegir}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {todos}
+      <ul className={styles.categorias}>
+        {grupos.map((grupo) => {
+          const expandida = grupo.id === visible;
+          return (
+            <li key={grupo.id}>
+              <button
+                type="button"
+                aria-expanded={expandida}
+                className={grupo.id === grupoElegido ? `${styles.categoria} ${styles.categoriaElegida}` : styles.categoria}
+                onClick={() => setAbierta(expandida ? '' : grupo.id)}
+              >
+                <span>{grupo.nombre}</span>
+                <span aria-hidden="true" className={styles.flecha}>{expandida ? '−' : '+'}</span>
+              </button>
+              {expandida && (
+                <div className={styles.oficiosCategoria}>
+                  <Opciones
+                    opciones={grupo.oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
+                    valor={oficioId ?? ''}
+                    alElegir={alElegir}
+                  />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 function Contenido({ seccion, filtros, oficioId, oficios, zonas = [], alCambiarFiltro, alElegirOficio }) {
   switch (seccion) {
     case 'disponibilidad':
@@ -112,11 +188,7 @@ function Contenido({ seccion, filtros, oficioId, oficios, zonas = [], alCambiarF
       );
     case 'categoria':
       return (
-        <Opciones
-          opciones={oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
-          valor={oficioId ?? ''}
-          alElegir={(id) => alElegirOficio(id)}
-        />
+        <SelectorCategoria oficios={oficios} oficioId={oficioId} alElegir={(id) => alElegirOficio(id)} />
       );
     case 'zona':
       return (

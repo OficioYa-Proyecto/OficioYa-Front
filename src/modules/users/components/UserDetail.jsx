@@ -30,7 +30,7 @@ function UserDetail() {
         <section className={vista.page}>
           <div className={vista.top}>
             <span className="eyebrow">Detalle de usuario</span>
-            {volver}
+            <div className={vista.profileActions}>{volver}</div>
           </div>
           <div className="card">
             <Skeleton lines={6} error={error} />
@@ -58,8 +58,8 @@ function UserDetail() {
   return (
       <section className={vista.page}>
         <div className={vista.top}>
-          <ProfileHeader userId={user.id} nombre={user.name} roles={user.roles} activo={isActive} etiqueta="Detalle de usuario" />
-          <div className={vista.actions}>
+          <ProfileHeader userId={user.id} nombre={user.name} roles={user.roles} etiqueta="Detalle de usuario" />
+          <div className={`${vista.actions} ${vista.profileActions}`}>
             <span className={styles.internal}>🛡 Acceso interno</span>
             {volver}
           </div>

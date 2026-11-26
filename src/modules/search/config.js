@@ -17,6 +17,7 @@ export const FRANJAS = [
 ];
 
 export const ORDENES = [
+  { valor: 'PERFIL_COMPLETO', nombre: 'Perfil más completo' },
   { valor: 'MAYOR_A_MENOR', nombre: 'Calificación: mayor a menor' },
   { valor: 'MENOR_A_MAYOR', nombre: 'Calificación: menor a mayor' },
 ];

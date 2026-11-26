@@ -1,5 +1,3 @@
-const FINAL_STATES = ['COMPLETED', 'CANCELED', 'REJECTED', 'EXPIRED'];
-
 // Acciones disponibles según rol y estado de la solicitud.
 export function actionsFor(role, state) {
   const actions = [];
@@ -17,11 +15,8 @@ export function actionsFor(role, state) {
     if (state === 'CONFLICT') {
       actions.push({ key: 'acceptConflict', label: 'Elegir esta' });
     }
-    if (['PENDING', 'ACCEPTED', 'CONFLICT'].includes(state)) {
+    if (['PENDING', 'ACCEPTED'].includes(state)) {
       actions.push({ key: 'cancel', label: 'Cancelar', variant: 'secondary' });
-    }
-    if (FINAL_STATES.includes(state)) {
-      actions.push({ key: 'remove', label: 'Eliminar', variant: 'secondary' });
     }
   }
   return actions;

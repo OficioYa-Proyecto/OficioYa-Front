@@ -10,6 +10,27 @@ export function listarResenas(trabajadorId, token) {
   return request(`${BASE}/trabajadores/${trabajadorId}/resenas`, { token });
 }
 
+/** Perfil del trabajador en Worker (por el Orchestrator): trae el userId de su cuenta y su oficio principal. */
+export function obtenerPerfilWorker(trabajadorId, token) {
+  return request(`/workers/${trabajadorId}`, { token });
+}
+
+/** Todos los trabajadores activos de Worker; cada uno trae el userId de su cuenta. */
+export function listarTrabajadores(token) {
+  return request('/workers', { token });
+}
+
+/** Barrios habilitados en OficioYa (por el Orchestrator): [{ id, name, locality }]. */
+export function listarZonas(token) {
+  return request('/zones', { token });
+}
+
+/** Datos públicos de cuentas en Users (nombre), por el Orchestrator. */
+export function obtenerUsuarios(userIds, token) {
+  const consulta = userIds.map((id) => `ids=${encodeURIComponent(id)}`).join('&');
+  return request(`/users?${consulta}`, { token });
+}
+
 export function calificar(solicitudId, puntuacion, comentario, token) {
   return request(`${BASE}/resenas`, {
     method: 'POST',

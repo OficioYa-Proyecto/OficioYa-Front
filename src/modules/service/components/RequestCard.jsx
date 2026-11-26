@@ -1,10 +1,11 @@
 import Button from '../../core/design-system/Button';
+import RequestPhotos from './RequestPhotos';
 import styles from './RequestCard.module.css';
 
 const STATE_META = {
   PENDING: { label: 'Pendiente', tone: 'info' },
   ACCEPTED: { label: 'Aceptada', tone: 'ok' },
-  CONFLICT: { label: 'En conflicto', tone: 'warn' },
+  CONFLICT: { label: 'En disputa', tone: 'warn' },
   CANCELED: { label: 'Cancelada', tone: 'bad' },
   REJECTED: { label: 'Rechazada', tone: 'bad' },
   COMPLETED: { label: 'Cumplida', tone: 'ok' },
@@ -56,9 +57,10 @@ function Icon({ children }) {
 
 // Tarjeta de una solicitud: mismo lenguaje visual que las notificaciones del mockup
 // (título, fecha, hora y ubicación con íconos, y el estado como etiqueta).
-function RequestCard({ request, actions, onAction, extra = null }) {
+function RequestCard({ request, actions, onAction, extra = null, personLabel = '', personName = '' }) {
   const meta = STATE_META[request.state] ?? { label: request.state, tone: 'muted' };
   const { date, time } = splitSchedule(request.scheduledDateTime);
+  const locationLabel = [request.locality, request.neighborhood].filter(Boolean).join(' · ') || 'Ubicación';
 
   return (
     <article className={styles.card}>
@@ -67,7 +69,27 @@ function RequestCard({ request, actions, onAction, extra = null }) {
         <span className={`${styles.badge} ${styles[meta.tone]}`}>{meta.label}</span>
       </div>
 
+      {request.state === 'CONFLICT' && (
+        <p className={styles.disputeNote}>
+          Dos trabajadores aceptaron; el contratante está eligiendo quién continúa.
+        </p>
+      )}
+
+      <RequestPhotos requestId={request.id} rootId={request.rootId} />
+
       <dl className={styles.facts}>
+        {personName && (
+          <div className={`${styles.fact} ${styles.wide}`}>
+            <Icon>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </Icon>
+            <div>
+              <dt>{personLabel}</dt>
+              <dd>{personName}</dd>
+            </div>
+          </div>
+        )}
         <div className={styles.fact}>
           <Icon>
             <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -94,7 +116,7 @@ function RequestCard({ request, actions, onAction, extra = null }) {
             <circle cx="12" cy="10" r="3" />
           </Icon>
           <div>
-            <dt>{request.neighborhood || 'Ubicación'}</dt>
+            <dt>{locationLabel}</dt>
             <dd>{request.exactAddress}</dd>
           </div>
         </div>

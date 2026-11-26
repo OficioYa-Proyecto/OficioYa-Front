@@ -3,7 +3,24 @@ import { requestsService } from '../services/requestsService';
 
 // Carga las solicitudes del usuario según su rol y expone las acciones sobre ellas.
 // role: 'TRABAJADOR' | 'CONTRATANTE'
-// action: 'accept' | 'reject' | 'complete' | 'acceptConflict' | 'cancel' | 'remove'
+// action: 'accept' | 'reject' | 'complete' | 'acceptConflict' | 'cancel'
+const NEXT_STATE = {
+  accept: 'ACCEPTED',
+  reject: 'REJECTED',
+  complete: 'COMPLETED',
+  acceptConflict: 'ACCEPTED',
+  cancel: 'CANCELED',
+};
+
+// Las más recientes primero, según la fecha en que se creó la solicitud.
+function newestFirst(list) {
+  return [...list].sort((a, b) => {
+    const left = a?.dateCreated ? new Date(a.dateCreated).getTime() : 0;
+    const right = b?.dateCreated ? new Date(b.dateCreated).getTime() : 0;
+    return right - left;
+  });
+}
+
 export function useRequests(role) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +33,7 @@ export function useRequests(role) {
       .listMine(role)
       .then((data) => {
         if (!cancelled) {
-          setRequests(Array.isArray(data) ? data : []);
+          setRequests(newestFirst(Array.isArray(data) ? data : []));
           setError('');
         }
       })
@@ -40,14 +57,35 @@ export function useRequests(role) {
   const act = useCallback(
     async (action, id) => {
       setError('');
+      // La tarjeta cambia al instante; la petición (y su correo) termina en segundo plano.
+      const next = NEXT_STATE[action];
+      if (next) {
+        setRequests((current) => {
+          const target = current.find((request) => request.id === id);
+          return current.map((request) => {
+            if (request.id === id) return { ...request, state: next };
+            // Al elegir en una disputa, las demás del mismo grupo quedan canceladas.
+            if (action === 'acceptConflict' && target?.rootId && request.rootId === target.rootId) {
+              return { ...request, state: 'CANCELED' };
+            }
+            return request;
+          });
+        });
+      }
       try {
         await requestsService[action](id);
         reload();
+        window.dispatchEvent(
+          new CustomEvent('oy-requests-changed', {
+            detail: { action, id, role, nextState: next },
+          }),
+        );
       } catch (e) {
         setError(e.message);
+        reload();
       }
     },
-    [reload],
+    [reload, role],
   );
 
   return { requests, loading, error, reload, act };

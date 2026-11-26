@@ -1,13 +1,69 @@
-import { request } from '../../core/lib/httpClient';
+const API_URL = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '');
+const BASE_URL = API_URL ? `${API_URL}/api/v1` : '/api/v1';
+const TOKEN_KEY = 'oy_token';
+
+async function postMultipart(path, form, token) {
+  const jwt = localStorage.getItem(TOKEN_KEY) || token;
+
+  let response;
+  try {
+    response = await fetch(BASE_URL + path, {
+      method: 'POST',
+      // Sin Content-Type: el navegador agrega multipart/form-data con su boundary
+      headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
+      body: form,
+    });
+  } catch {
+    throw new Error('No se pudo conectar con el servidor');
+  }
+
+  if (!response.ok) {
+    const apiError = await response.json().catch(() => ({}));
+    const error = new Error(
+      apiError.message ?? apiError.mensaje ?? apiError.detail ?? apiError.error ?? `Error ${response.status}`,
+    );
+    error.status = response.status;
+    throw error;
+  }
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function asPhotoFile(photo) {
+  if (photo?.file) {
+    return photo.file;
+  }
+  if (!photo?.dataUrl) {
+    return null;
+  }
+
+  const [header, encoded] = photo.dataUrl.split(',');
+  if (!encoded) {
+    return null;
+  }
+
+  const mime = /data:([^;]+);base64/.exec(header)?.[1] || photo.type || 'application/octet-stream';
+  const binary = atob(encoded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new File([bytes], photo.name || 'foto', { type: mime });
+}
 
 export const createRequestService = {
-  create: async (payload, token) => {
-    const result = await request('/requests', { method: 'POST', body: payload, token });
-    const sent = typeof result?.sent === 'number' ? result.sent : (result?.workersId?.length ?? 0);
+  create: async (payload, photos, token) => {
+    const form = new FormData();
+    form.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    photos.forEach((photo) => {
+      const file = asPhotoFile(photo);
+      if (file) {
+        form.append('images', file);
+      }
+    });
+
+    const result = await postMultipart('/requests', form, token);
+    const sent = Array.isArray(result) ? result.length : (result?.workersId?.length ?? 0);
     if (sent < 1) {
-      throw new Error(
-        'La solicitud no se envió a ningún trabajador. Prueba con otros trabajadores.',
-      );
+      throw new Error('La solicitud no se envió a ningún trabajador. Prueba con otros trabajadores.');
     }
     return { ...result, sent };
   },

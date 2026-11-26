@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ACCESS_TOKEN } from '../config';
 import * as profileService from '../services/profileService';
 
 export function useProfile(id) {
@@ -9,8 +8,8 @@ export function useProfile(id) {
 
   useEffect(() => {
     const peticion = id
-      ? profileService.obtenerPerfilPublico(id, ACCESS_TOKEN)
-      : profileService.obtenerMiPerfil(ACCESS_TOKEN);
+      ? profileService.obtenerPerfilPublico(id)
+      : profileService.obtenerMiPerfil();
 
     peticion
       .then(setPerfil)
@@ -19,11 +18,11 @@ export function useProfile(id) {
   }, [id]);
 
   async function actualizar(datos) {
-    setPerfil(await profileService.actualizarMiPerfil(datos, ACCESS_TOKEN));
+    setPerfil(await profileService.actualizarMiPerfil(datos));
   }
 
   async function agregarRol(rol) {
-    setPerfil(await profileService.agregarRol(rol, ACCESS_TOKEN));
+    setPerfil(await profileService.agregarRol(rol));
   }
 
   return { perfil, cargando, error, actualizar, agregarRol };
