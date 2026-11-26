@@ -51,15 +51,19 @@ async function cargarCuenta(trabajadorId, token) {
     .map((foto) => ({ id: foto.id ?? foto.url, url: foto.url, descripcion: foto.description ?? '' }));
   const disponibleAhora = Boolean(perfil?.availableNow);
   let nombre = '';
+  // null si Users no respondió: así no se afirma que la persona no es contratante sin saberlo.
+  let roles = null;
   if (userId) {
     try {
       const usuarios = await reputationService.obtenerUsuarios([userId], token);
-      nombre = (Array.isArray(usuarios) ? usuarios : []).find((u) => u.id === userId)?.name?.trim() ?? '';
+      const usuario = (Array.isArray(usuarios) ? usuarios : []).find((u) => u.id === userId);
+      nombre = usuario?.name?.trim() ?? '';
+      roles = Array.isArray(usuario?.roles) ? usuario.roles : null;
     } catch {
       nombre = '';
     }
   }
-  return { userId, nombre, oficio, oficios, zonaIds, franjas, tarifas, fotos, disponibleAhora };
+  return { userId, nombre, roles, oficio, oficios, zonaIds, franjas, tarifas, fotos, disponibleAhora };
 }
 
 export function useCuentaTrabajador(trabajadorId, token) {
@@ -80,6 +84,7 @@ export function useCuentaTrabajador(trabajadorId, token) {
           tarifas: [],
           fotos: [],
           disponibleAhora: false,
+          roles: null,
         }));
     return () => {
       vigente = false;

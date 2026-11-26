@@ -132,3 +132,38 @@
     margin: 0 auto;
   }
 }
+
+/* Pestañas: reseñas al trabajador / reseñas a contratantes. */
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pestana,
+.pestanaActiva {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pestana:hover {
+  border-color: var(--color-text-muted);
+}
+
+.pestanaActiva {
+  border-color: var(--color-primary, #d9603f);
+  background: var(--color-primary, #d9603f);
+  color: #fff;
+}
+
+.panelResenas {
+  display: grid;
+  gap: 12px;
+}
