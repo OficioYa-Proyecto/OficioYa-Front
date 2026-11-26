@@ -41,7 +41,7 @@ function ServiceMini({ values }) {
         <span>{formatSchedule(values.date, values.time)}</span>
         <span className={styles.miniPlace}>
           <MapPinIcon size={14} />
-          {values.neighborhood.trim()}
+          {[values.neighborhood, values.locality].map((value) => String(value ?? '').trim()).filter(Boolean).join(', ')}
         </span>
       </div>
     </div>
@@ -54,7 +54,9 @@ function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
 
   const selectedIds = new Set(values.workers.map((w) => w.id));
   const chosen = workers.filter((w) => selectedIds.has(w.id));
-  const neighborhood = values.neighborhood.trim();
+  const neighborhood = String(values.neighborhood ?? '').trim();
+  const locality = String(values.locality ?? '').trim();
+  const zoneLabel = [neighborhood, locality].filter(Boolean).join(', ');
   const message = blockingMessage(status, workers.length, chosen.length);
 
   const toggle = (worker) => {
@@ -79,7 +81,7 @@ function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
       {workersService.notice && <p className={styles.notice}>{workersService.notice}</p>}
 
       <div className={styles.heading}>
-        <h2>Trabajadores cerca de {neighborhood}</h2>
+        <h2>Trabajadores cerca de {zoneLabel}</h2>
         <span className={styles.count}>
           {chosen.length} {chosen.length === 1 ? 'seleccionado' : 'seleccionados'}
         </span>
@@ -104,7 +106,7 @@ function WorkersStep({ values, onChange, onSubmit, onEditRequest }) {
 
       {status === 'ready' && workers.length === 0 && (
         <div className={styles.state}>
-          <h3>No hay trabajadores disponibles en {neighborhood}</h3>
+          <h3>No hay trabajadores disponibles en {zoneLabel}</h3>
           <p>{searchMessage || 'Prueba con otro barrio, otra fecha u otra hora.'}</p>
           <Button type="button" variant="secondary" onClick={onEditRequest}>
             Cambiar datos de la solicitud

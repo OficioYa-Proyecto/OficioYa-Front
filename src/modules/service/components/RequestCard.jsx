@@ -60,6 +60,7 @@ function Icon({ children }) {
 function RequestCard({ request, actions, onAction, extra = null, personLabel = '', personName = '' }) {
   const meta = STATE_META[request.state] ?? { label: request.state, tone: 'muted' };
   const { date, time } = splitSchedule(request.scheduledDateTime);
+  const locationLabel = [request.locality, request.neighborhood].filter(Boolean).join(' · ') || 'Ubicación';
 
   return (
     <article className={styles.card}>
@@ -109,7 +110,7 @@ function RequestCard({ request, actions, onAction, extra = null, personLabel = '
             <circle cx="12" cy="10" r="3" />
           </Icon>
           <div>
-            <dt>{request.neighborhood || 'Ubicación'}</dt>
+            <dt>{locationLabel}</dt>
             <dd>{request.exactAddress}</dd>
           </div>
         </div>

@@ -5,8 +5,10 @@ export const EMPTY_FORM = {
   trade: '',
   description: '',
   photos: [],
+  localityId: '',
+  locality: '',
   neighborhood: '',
-  neighborhoodId: '',
+  zoneIds: [],
   address: { roadType: '', main: '', cross: '', number: '' },
   exactAddress: '',
   addressNote: '',
@@ -218,7 +220,10 @@ export function validateDetails(values, now = new Date(), schedule = null) {
   if (!values.description.trim()) {
     errors.description = 'Describe el problema.';
   }
-  if (!values.neighborhood.trim()) {
+  if (!values.localityId || !String(values.locality ?? '').trim()) {
+    errors.localityId = 'Selecciona la localidad.';
+  }
+  if (!String(values.neighborhood ?? '').trim()) {
     errors.neighborhood = 'Indica el barrio.';
   }
 
