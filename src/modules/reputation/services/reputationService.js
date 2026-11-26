@@ -6,6 +6,11 @@ export function obtenerReputacion(trabajadorId, token) {
   return request(`${BASE}/trabajadores/${trabajadorId}`, { token });
 }
 
+/** Calificación de un contratante: { contratanteId, promedioCalificaciones, totalResenas }. */
+export function obtenerReputacionContratante(contratanteId, token) {
+  return request(`${BASE}/contratantes/${contratanteId}`, { token });
+}
+
 export function listarResenas(trabajadorId, token) {
   return request(`${BASE}/trabajadores/${trabajadorId}/resenas`, { token });
 }
