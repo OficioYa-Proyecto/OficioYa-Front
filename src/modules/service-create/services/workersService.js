@@ -81,13 +81,15 @@ export const workersService = {
   isMock: false,
   notice: '',
 
-  // Misma búsqueda por oficio de la página Buscar, con el barrio elegido en el paso 1 añadido al filtro.
-  search: async ({ tradeId, neighborhoodId, date, time }) => {
+  // Misma búsqueda por oficio de la página Buscar, con las zonas de la localidad elegida en el paso 1.
+  search: async ({ tradeId, zoneIds, date, time }) => {
     if (!tradeId) {
       throw new Error('Selecciona el trabajo u oficio para buscar trabajadores.');
     }
     const filtros = { orden: 'MAYOR_A_MENOR' };
-    if (neighborhoodId) filtros.barrioIds = String(neighborhoodId);
+    if (Array.isArray(zoneIds) && zoneIds.length > 0) {
+      filtros.barrioIds = zoneIds.join(',');
+    }
     const day = weekdayOf(date);
     if (day) filtros.diaSemana = day;
     const hour = timeOf(time);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../../core/design-system/Button';
 import { ADDRESS_NOTE_MAX, DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import { useLocalities } from '../hooks/useLocalities';
 import { useTrades } from '../hooks/useTrades';
 import { useZones } from '../hooks/useZones';
 import {
@@ -39,18 +40,6 @@ function groupByCategory(trades) {
     }
     return a.category.localeCompare(b.category, 'es');
   });
-}
-
-function groupByLocality(zones) {
-  const groups = new Map();
-  for (const zone of zones) {
-    const key = zone.locality || 'Otros';
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-    groups.get(key).push(zone);
-  }
-  return Array.from(groups, ([locality, items]) => ({ locality, items }));
 }
 
 function fieldProps(id, error, { required = false, hint = false } = {}) {
@@ -164,11 +153,15 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
   const errors = validateDetails(values, new Date(), locked.schedule);
   const visible = submitted ? errors : {};
   const zones = useZones();
-  // Desde Contratar solo aparecen los barrios donde trabaja el trabajador elegido.
+  const localities = useLocalities();
+  // Desde Contratar solo se pueden elegir localidades donde trabaja el trabajador elegido.
   const allowedZones = locked.zoneIds
     ? zones.items.filter((zone) => locked.zoneIds.includes(zone.id))
     : zones.items;
-  const groups = groupByLocality(allowedZones);
+  const allowedLocalities = locked.zoneIds
+    ? localities.items.filter((locality) =>
+      allowedZones.some((zone) => zone.locality === locality.name))
+    : localities.items;
   const trades = useTrades();
   const tradeGroups = groupByCategory(trades.items);
   // Desde Contratar solo se pueden elegir días en los que el trabajador tiene franjas disponibles.
@@ -178,6 +171,15 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
     value: values[name],
     onChange: (event) => onChange({ [name]: event.target.value }),
   });
+
+  const changeLocality = (localityId) => {
+    const locality = localities.items.find((item) => String(item.id) === String(localityId));
+    const localityName = locality?.name ?? '';
+    const zoneIds = allowedZones
+      .filter((zone) => zone.locality === localityName)
+      .map((zone) => zone.id);
+    onChange({ localityId, locality: localityName, zoneIds });
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -255,42 +257,57 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
         </div>
 
         <div className={styles.column}>
-          <Field
-            id="field-neighborhood"
-            label="Barrio"
-            required
-            error={visible.neighborhood}
-            icon={<MapPinIcon size={18} />}
-            hint={locked.zoneIds ? 'Solo aparecen los barrios donde trabaja el trabajador que elegiste.' : undefined}
-          >
-            <select
-              {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: Boolean(locked.zoneIds) })}
-              value={values.neighborhood}
-              onChange={(event) => {
-                const name = event.target.value;
-                const zone = zones.items.find((item) => item.name === name);
-                onChange({ neighborhood: name, neighborhoodId: zone ? zone.id : '' });
-              }}
+          <div className={styles.row}>
+            <Field
+              id="field-localityId"
+              label="Localidad"
+              required
+              error={visible.localityId}
+              icon={<MapPinIcon size={18} />}
+              hint={locked.zoneIds ? 'Solo aparecen las localidades donde trabaja el trabajador que elegiste.' : undefined}
             >
-              <option value="">{zones.status === 'loading' ? 'Cargando barrios' : 'Selecciona'}</option>
-              {groups.map((group) => (
-                <optgroup key={group.locality} label={group.locality}>
-                  {group.items.map((zone) => (
-                    <option key={zone.id} value={zone.name}>
-                      {zone.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </Field>
-          {zones.status === 'error' && (
+              <select
+                {...fieldProps('field-localityId', visible.localityId, { required: true, hint: Boolean(locked.zoneIds) })}
+                value={values.localityId}
+                onChange={(event) => changeLocality(event.target.value)}
+              >
+                <option value="">{localities.status === 'loading' ? 'Cargando localidades' : 'Selecciona'}</option>
+                {allowedLocalities.map((locality) => (
+                  <option key={locality.id} value={locality.id}>
+                    {locality.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field
+              id="field-neighborhood"
+              label="Barrio"
+              required
+              error={visible.neighborhood}
+              hint="Escribe el barrio donde se hará el servicio."
+            >
+              <input
+                type="text"
+                autoComplete="off"
+                maxLength={120}
+                placeholder="Ej.: Chapinero"
+                {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: true })}
+                {...bind('neighborhood')}
+              />
+            </Field>
+          </div>
+          {localities.status === 'error' && (
             <div className={styles.hint} role="alert">
-              <p>No pudimos cargar los barrios.</p>
-              <Button type="button" variant="secondary" onClick={zones.retry}>
+              <p>No pudimos cargar las localidades.</p>
+              <Button type="button" variant="secondary" onClick={localities.retry}>
                 Reintentar
               </Button>
             </div>
+          )}
+          {zones.status === 'error' && (
+            <p className={styles.hint}>
+              No pudimos cargar las zonas para afinar la búsqueda; puedes continuar con el barrio escrito.
+            </p>
           )}
 
           <Field

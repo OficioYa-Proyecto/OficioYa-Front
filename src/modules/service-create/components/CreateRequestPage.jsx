@@ -6,6 +6,7 @@ import { DETAILS_FORM_ID, SENT_STEP, STEPS, WORKERS_FORM_ID } from '../config';
 import { useCreateRequest } from '../hooks/useCreateRequest';
 import { warmWorkerIds } from '../hooks/useWorkerPhoto';
 import { EMPTY_FORM } from '../requestForm';
+import { localitiesService } from '../services/localitiesService';
 import { workersService } from '../services/workersService';
 import { zonesService } from '../services/zonesService';
 import '../theme.css';
@@ -74,10 +75,9 @@ function CreateRequestPage() {
     }).catch(() => {});
   }, [hasPreselection, preselectedWorkerId, fromProfile?.nombre, fromProfile?.oficio]);
 
-  // Desde el botón Contratar: el primer barrio donde trabaja queda preseleccionado, y solo se puede elegir
-  // entre los barrios donde trabaja.
+  // Desde el botón Contratar: la localidad y el primer barrio donde trabaja quedan preseleccionados.
   const profileZoneIds = hasPreselection ? fromProfile?.zonaIds : null;
-  // Desde Contratar el oficio queda bloqueado y el barrio se limita a los del trabajador.
+  // Desde Contratar el oficio queda bloqueado y la localidad se limita a las del trabajador.
   const locked = {
     trade: Boolean(hasPreselection && fromProfile?.oficioId),
     zoneIds: Array.isArray(profileZoneIds) && profileZoneIds.length > 0 ? profileZoneIds : null,
@@ -88,13 +88,19 @@ function CreateRequestPage() {
   };
   useEffect(() => {
     if (!Array.isArray(profileZoneIds) || profileZoneIds.length === 0) return;
-    zonesService.list().then((zones) => {
+    Promise.all([zonesService.list(), localitiesService.list()]).then(([zones, localidades]) => {
       const zone = zones.find((item) => profileZoneIds.includes(item.id));
-      if (zone) {
-        setForm((current) => (current.neighborhood
-          ? current
-          : { ...current, neighborhood: zone.name, neighborhoodId: zone.id }));
-      }
+      if (!zone) return;
+      const locality = localidades.find((item) => item.name === zone.locality);
+      setForm((current) => (current.neighborhood
+        ? current
+        : {
+          ...current,
+          localityId: locality ? String(locality.id) : '',
+          locality: zone.locality || '',
+          neighborhood: zone.name,
+          zoneIds: zones.filter((item) => profileZoneIds.includes(item.id)).map((item) => item.id),
+        }));
     }).catch(() => {});
     // Los ids llegan una sola vez desde el perfil.
     // eslint-disable-next-line react-hooks/exhaustive-deps
