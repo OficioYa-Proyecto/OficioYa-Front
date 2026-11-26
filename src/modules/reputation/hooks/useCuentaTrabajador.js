@@ -3,8 +3,26 @@ import * as reputationService from '../services/reputationService';
 
 // Cuenta del trabajador: el userId (lo necesita Nueva solicitud), su nombre y su oficio principal.
 // Si Worker o Users no responden, el perfil se muestra igual, sin el botón Contratar.
+/**
+ * Perfil de Worker a partir del id de la ruta. Search enlaza con el id del perfil, pero Mis servicios enlaza con
+ * la cuenta del trabajador (el id que guarda Service). Worker no busca por cuenta, así que en ese caso se busca en
+ * la lista de trabajadores el que tiene esa cuenta.
+ */
+async function perfilDeWorker(id, token) {
+  try {
+    return await reputationService.obtenerPerfilWorker(id, token);
+  } catch (error) {
+    const trabajadores = await reputationService.listarTrabajadores(token).catch(() => []);
+    const conEsaCuenta = (Array.isArray(trabajadores) ? trabajadores : []).find((t) => t?.userId === id);
+    if (conEsaCuenta) {
+      return conEsaCuenta;
+    }
+    throw error;
+  }
+}
+
 async function cargarCuenta(trabajadorId, token) {
-  const perfil = await reputationService.obtenerPerfilWorker(trabajadorId, token);
+  const perfil = await perfilDeWorker(trabajadorId, token);
   const userId = perfil?.userId ?? null;
   const oficio = perfil?.primaryTrade?.trade?.name ?? '';
   // Oficios que ofrece (principal primero) y barrios donde trabaja: Nueva solicitud los usa para preseleccionar.
@@ -24,6 +42,14 @@ async function cargarCuenta(trabajadorId, token) {
       inicio: slot.startTime.slice(0, 5),
       fin: slot.endTime.slice(0, 5),
     }));
+  // Tarifa de cada oficio, fotos de trabajos realizados y si está disponible ahora: se muestran en el perfil.
+  const tarifas = [perfil?.primaryTrade, ...(perfil?.secondaryTrades ?? [])]
+    .filter((item) => item?.trade?.name)
+    .map((item) => ({ nombre: item.trade.name, tarifa: item.approxRate ?? null, unidad: item.rateUnit ?? null }));
+  const fotos = (Array.isArray(perfil?.photos) ? perfil.photos : [])
+    .filter((foto) => foto?.url)
+    .map((foto) => ({ id: foto.id ?? foto.url, url: foto.url, descripcion: foto.description ?? '' }));
+  const disponibleAhora = Boolean(perfil?.availableNow);
   let nombre = '';
   if (userId) {
     try {
@@ -33,7 +59,7 @@ async function cargarCuenta(trabajadorId, token) {
       nombre = '';
     }
   }
-  return { userId, nombre, oficio, oficios, zonaIds, franjas };
+  return { userId, nombre, oficio, oficios, zonaIds, franjas, tarifas, fotos, disponibleAhora };
 }
 
 export function useCuentaTrabajador(trabajadorId, token) {
@@ -43,7 +69,18 @@ export function useCuentaTrabajador(trabajadorId, token) {
     let vigente = true;
     cargarCuenta(trabajadorId, token)
       .then((datos) => vigente && setCuenta({ trabajadorId, ...datos }))
-      .catch(() => vigente && setCuenta({ trabajadorId, userId: null, nombre: '', oficio: '', oficios: [], zonaIds: [], franjas: [] }));
+      .catch(() => vigente && setCuenta({
+          trabajadorId,
+          userId: null,
+          nombre: '',
+          oficio: '',
+          oficios: [],
+          zonaIds: [],
+          franjas: [],
+          tarifas: [],
+          fotos: [],
+          disponibleAhora: false,
+        }));
     return () => {
       vigente = false;
     };
