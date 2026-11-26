@@ -5,7 +5,7 @@ import styles from './RequestCard.module.css';
 const STATE_META = {
   PENDING: { label: 'Pendiente', tone: 'info' },
   ACCEPTED: { label: 'Aceptada', tone: 'ok' },
-  CONFLICT: { label: 'En conflicto', tone: 'warn' },
+  CONFLICT: { label: 'En disputa', tone: 'warn' },
   CANCELED: { label: 'Cancelada', tone: 'bad' },
   REJECTED: { label: 'Rechazada', tone: 'bad' },
   COMPLETED: { label: 'Cumplida', tone: 'ok' },
@@ -67,6 +67,12 @@ function RequestCard({ request, actions, onAction, extra = null, personLabel = '
         <h3>{deriveTitle(request.description)}</h3>
         <span className={`${styles.badge} ${styles[meta.tone]}`}>{meta.label}</span>
       </div>
+
+      {request.state === 'CONFLICT' && (
+        <p className={styles.disputeNote}>
+          Dos trabajadores aceptaron; el contratante está eligiendo quién continúa.
+        </p>
+      )}
 
       <RequestPhotos requestId={request.id} rootId={request.rootId} />
 

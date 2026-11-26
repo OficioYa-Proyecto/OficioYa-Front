@@ -15,7 +15,7 @@ export function actionsFor(role, state) {
     if (state === 'CONFLICT') {
       actions.push({ key: 'acceptConflict', label: 'Elegir esta' });
     }
-    if (['PENDING', 'ACCEPTED', 'CONFLICT'].includes(state)) {
+    if (['PENDING', 'ACCEPTED'].includes(state)) {
       actions.push({ key: 'cancel', label: 'Cancelar', variant: 'secondary' });
     }
   }
