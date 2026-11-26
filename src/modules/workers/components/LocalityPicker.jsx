@@ -5,7 +5,8 @@ import styles from './worker.module.css';
 const plural = (count) => `${count} ${count === 1 ? 'barrio' : 'barrios'}`;
 
 // El trabajador elige localidades; cada una cubre todos sus barrios.
-// value = { localityIds, zoneIds }: zoneIds solo guarda los barrios de "Otras" (sin localidad conocida).
+// value = { localityIds, zoneIds }: zoneIds solo guarda los barrios de "Otras" (sin localidad conocida)
+// o barrios sueltos de una localidad no elegida.
 function LocalityPicker({ zones, localities, value, onChange, error }) {
   const toggleLocality = (group) => {
     if (value.localityIds.includes(group.id)) {
@@ -50,7 +51,7 @@ function LocalityPicker({ zones, localities, value, onChange, error }) {
             >
               <input
                 checked={complete}
-                onChange={() => (isOthers ? toggleOthers(group.zones) : toggleLocality(group.id))}
+                onChange={() => (isOthers ? toggleOthers(group.zones) : toggleLocality(group))}
                 ref={(input) => { if (input) input.indeterminate = covered.length > 0 && !complete; }}
                 type="checkbox"
               />

@@ -84,14 +84,10 @@ export function formatMoney(input) {
   return `$${new Intl.NumberFormat('es-CO').format(input)}`;
 }
 
+// Fecha ISO (AAAA-MM-DD, con o sin hora) a DD/MM/AAAA
 export function formatDate(input) {
-  if (!input) return '';
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(`${input}T00:00:00Z`));
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(input ?? ''));
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
 }
 
 // Misma regla que WorkerTradeRequest en el back: @Positive y @Digits(integer = 8, fraction = 2).
