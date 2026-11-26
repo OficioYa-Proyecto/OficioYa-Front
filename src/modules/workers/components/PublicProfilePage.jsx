@@ -7,7 +7,7 @@ import ui from './ui/ui.module.css';
 import { useZones } from '../hooks/useCatalogs';
 import { useWorker } from '../hooks/useWorker';
 import { getSession } from '../../core/lib/session';
-import { formatMoney, formatDate, unitName } from './formats';
+import { formatMoney, formatDate, unitName, coveredLocalities } from './formats';
 import ScheduleEditor from './ScheduleEditor';
 import styles from './worker.module.css';
 import { useAccount } from '../hooks/useAccount';
@@ -36,7 +36,7 @@ function PublicProfilePage() {
 
   const isOwn = profile.userId === getSession()?.userId;
   const trades = [profile.primaryTrade, ...profile.secondaryTrades];
-  const zoneName = (zoneId) => zones?.find((zone) => zone.id === zoneId)?.name ?? `Zona ${zoneId}`;
+  const localities = coveredLocalities(profile.zoneIds, zones);
   const { primaryTrade } = profile;
 
   return (
@@ -72,14 +72,14 @@ function PublicProfilePage() {
         <aside className={styles.stack}>
           <section className={ui.infoCard}>
             <h2>Cobertura</h2>
-            {profile.zoneIds.length ? (
+            {localities?.length ? (
               <div className={styles.zoneChips}>
-                {profile.zoneIds.map((zoneId) => (
-                  <span key={zoneId}><Icon name="map" size={13} /> {zoneName(zoneId)}</span>
+                {localities.map((name) => (
+                  <span key={name}><Icon name="map" size={13} /> {name}</span>
                 ))}
               </div>
             ) : (
-              <p className={styles.mutedText}>Sin zonas publicadas.</p>
+              <p className={styles.mutedText}>{localities === null ? 'Cargando…' : 'Sin localidades publicadas.'}</p>
             )}
           </section>
           <section className={ui.infoCard}>

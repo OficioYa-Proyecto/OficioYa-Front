@@ -22,6 +22,58 @@ export function dayName(input) {
   return DAYS.find((dia) => dia.value === input)?.label ?? '';
 }
 
+// Mismo criterio que el back: sin tildes, mayúsculas ni espacios de más
+export function normalizeName(text) {
+  return (text ?? '').trim().normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').toLowerCase();
+}
+
+// Agrupa los barrios por localidad emparejando por nombre.
+// Devuelve [{ id, name, zones }] ordenado; los barrios sin localidad van al final como { id: null, name: 'Otras' }.
+export function groupCoverage(zones, localities) {
+  const byName = new Map(localities.map((locality) => [normalizeName(locality.name), locality]));
+  const groups = new Map();
+  const others = [];
+  zones.forEach((zone) => {
+    const locality = byName.get(normalizeName(zone.locality));
+    if (!locality) {
+      others.push(zone);
+      return;
+    }
+    if (!groups.has(locality.id)) groups.set(locality.id, { id: locality.id, name: locality.name, zones: [] });
+    groups.get(locality.id).zones.push(zone);
+  });
+  const byZoneName = (a, b) => a.name.localeCompare(b.name, 'es');
+  const list = [...groups.values()].sort(byZoneName);
+  list.forEach((group) => group.zones.sort(byZoneName));
+  if (others.length) list.push({ id: null, name: 'Otras', zones: others.sort(byZoneName) });
+  return list;
+}
+
+// Valor inicial del selector a partir de lo guardado. Quien tenía todos los barrios de una localidad
+// sueltos la ve marcada como localidad (al guardar se le registra y se borran los barrios sueltos).
+export function initialCoverage(saved, groups) {
+  const localityIds = new Set(saved.localityIds);
+  const zoneIds = new Set(saved.zoneIds);
+  groups.forEach((group) => {
+    if (group.id !== null && group.zones.every((zone) => zoneIds.has(zone.id))) {
+      localityIds.add(group.id);
+      group.zones.forEach((zone) => zoneIds.delete(zone.id));
+    }
+  });
+  return { localityIds: [...localityIds], zoneIds: [...zoneIds] };
+}
+
+// Localidades que cubre el trabajador, a partir de los ids de barrio que guarda Worker.
+// Devuelve null mientras no se hayan cargado las zonas.
+export function coveredLocalities(zoneIds, zones) {
+  if (!zones) return null;
+  const names = zoneIds
+    .map((id) => zones.find((zone) => zone.id === id))
+    .filter(Boolean)
+    .map((zone) => zone.locality || 'Otras');
+  return [...new Set(names)].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
 export function formatMoney(input) {
   return `$${new Intl.NumberFormat('es-CO').format(input)}`;
 }

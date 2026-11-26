@@ -8,7 +8,7 @@ import ui from './ui/ui.module.css';
 import { useAccount } from '../hooks/useAccount';
 import { useZones } from '../hooks/useCatalogs';
 import { useMyWorker } from '../hooks/useMyWorker';
-import { DAYS, formatMoney, formatDate, dayName, unitName } from './formats';
+import { DAYS, formatMoney, formatDate, dayName, unitName, coveredLocalities } from './formats';
 import PageHeading from './PageHeading';
 import ProfileStatus from './ProfileStatus';
 import styles from './worker.module.css';
@@ -25,7 +25,7 @@ function DashboardPage() {
   const paused = profile.status === 'PAUSED';
   const { primaryTrade, secondaryTrades } = profile;
   const firstName = account?.name?.trim().split(/\s+/)[0];
-  const zoneNames = profile.zoneIds.map((id) => zones?.find((zone) => zone.id === id)?.name ?? `Zona ${id}`);
+  const localities = coveredLocalities(profile.zoneIds, zones);
   const today = new Date().toISOString().slice(0, 10);
   const slots = [...profile.slots]
     .filter((slot) => slot.recurrenceType === 'RECURRING' || slot.startDate >= today)
@@ -105,15 +105,14 @@ function DashboardPage() {
 
           <section className={ui.infoCard}>
             <header className={styles.dashHead}>
-              <h2>Zonas de cobertura</h2>
+              <h2>Localidades de cobertura</h2>
               <Link to="/worker/coverage">Editar</Link>
             </header>
-            {zoneNames.length === 0 ? (
-              <p className={styles.mutedText}>Aún no has elegido zonas.</p>
+            {localities === null || localities.length === 0 ? (
+              <p className={styles.mutedText}>{localities === null ? 'Cargando…' : 'Aún no has elegido localidades.'}</p>
             ) : (
               <div className={styles.miniChips}>
-                {zoneNames.slice(0, 6).map((name) => <em key={name}>{name}</em>)}
-                {zoneNames.length > 6 && <em>+{zoneNames.length - 6}</em>}
+                {localities.map((name) => <em key={name}>{name}</em>)}
               </div>
             )}
           </section>
