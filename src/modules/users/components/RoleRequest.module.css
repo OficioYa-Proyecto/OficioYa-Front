@@ -11,18 +11,54 @@
 .encabezado {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
-.encabezado > div {
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lineaNombre {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roles {
+  margin-top: 6px;
+}
+
+.nombre {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.verPerfil {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.separador {
+  width: 100%;
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.titulo {
   display: grid;
   gap: 2px;
 }
 
-.usuario {
-  font-weight: 700;
-  color: var(--color-primary);
+.titulo h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
 }
 
 .fecha {
@@ -60,12 +96,23 @@
 
 .acciones {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   gap: 8px;
+}
+
+.mensajes {
+  flex: 1;
+  min-width: 0;
 }
 
 .filtros {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.filtros > button {
+  padding: 8px 16px;
+  font-size: 0.9rem;
 }

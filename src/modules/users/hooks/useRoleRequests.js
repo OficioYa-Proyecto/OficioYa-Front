@@ -6,7 +6,6 @@ import {
   resolverPeticionRol,
 } from '../services/roleRequestService';
 
-// RF-13. Peticiones propias (Editar perfil); la más reciente primero
 export function useMisPeticionesRol() {
   const [peticiones, setPeticiones] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -26,7 +25,6 @@ export function useMisPeticionesRol() {
   return { peticiones, cargando, pedir };
 }
 
-// RF-13. Peticiones para el administrador (bandeja y detalle de usuario)
 export function usePeticionesRol({ status, userId } = {}) {
   const [peticiones, setPeticiones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,9 +49,9 @@ export function usePeticionesRol({ status, userId } = {}) {
 
   const recargar = () => setVersion((v) => v + 1);
 
-  // Lanza el error para que la tarjeta lo muestre; si se resolvió, sale del filtro de pendientes
   async function resolver(id, accion, motivo) {
     const actualizada = await resolverPeticionRol(id, accion, motivo);
+    window.dispatchEvent(new Event('oy-requests-changed'));
     setPeticiones((actuales) => actuales
       .map((p) => (p.id === id ? actualizada : p))
       .filter((p) => !status || p.status === status));

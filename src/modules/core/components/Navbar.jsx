@@ -5,6 +5,8 @@ import { getProfilePhotoUrl } from '../lib/imageService';
 import { clearSession, getSession } from '../lib/session';
 import { navLinks } from '../lib/moduleRegistry';
 import { requestsService } from '../../service/services/requestsService';
+import { listarPeticionesRol } from '../../users/services/roleRequestService';
+import { NOMBRES_ROL } from '../../users/config';
 import styles from './Navbar.module.css';
 
 function BellIcon() {
@@ -254,6 +256,26 @@ function Navbar() {
                   color: 'primary',
                 }),
               );
+          })
+          .catch(() => {}),
+      );
+    }
+
+    if (roles.includes('ADMIN')) {
+      tasks.push(
+        listarPeticionesRol({ status: 'PENDING' })
+          .then((list) => {
+            (Array.isArray(list) ? list : []).forEach((p) =>
+              add({
+                id: `rr-${p.id}`,
+                state: 'PENDING',
+                title: 'Nueva petición de cambio de rol',
+                description: `${p.userName ?? 'Un usuario'} pide dejar de ser ${NOMBRES_ROL[p.role]?.toLowerCase() ?? p.role}.`,
+                actionLabel: 'Revisar petición',
+                link: '/admin/role-requests',
+                color: 'warn',
+              }),
+            );
           })
           .catch(() => {}),
       );
