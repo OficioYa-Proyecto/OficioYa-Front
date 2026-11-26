@@ -15,6 +15,11 @@ export function obtenerPerfilWorker(trabajadorId, token) {
   return request(`/workers/${trabajadorId}`, { token });
 }
 
+/** Todos los trabajadores activos de Worker; cada uno trae el userId de su cuenta. */
+export function listarTrabajadores(token) {
+  return request('/workers', { token });
+}
+
 /** Barrios habilitados en OficioYa (por el Orchestrator): [{ id, name, locality }]. */
 export function listarZonas(token) {
   return request('/zones', { token });
