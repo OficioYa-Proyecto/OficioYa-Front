@@ -34,7 +34,7 @@ function TarjetaTrabajador({ trabajador }) {
       <div className={styles.calificacion}>
         <strong>{decimal(calificacion)}</strong>
         <Estrellas valor={calificacion} />
-        <span className={styles.resenas}>{trabajador.totalResenas ?? 0} reseñas</span>
+        <span className={styles.resenas}>{trabajador.totalResenas ?? 0} {trabajador.totalResenas === 1 ? 'reseña' : 'reseñas'}</span>
       </div>
 
       <div className={styles.pie}>
