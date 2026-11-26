@@ -16,10 +16,62 @@ const PERSON = {
 
 const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
 
-function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
+function ConflictGroups({ requests, names, person, onAction, focusRootId }) {
+  const groups = new Map();
+  requests
+    .filter((request) => request?.state === 'CONFLICT' && request?.rootId)
+    .forEach((request) => {
+      if (!groups.has(request.rootId)) groups.set(request.rootId, []);
+      groups.get(request.rootId).push(request);
+    });
+
+  return [...groups.entries()].map(([rootId, candidates]) => (
+    <section
+      key={rootId}
+      className={`${styles.conflict} ${focusRootId === rootId ? styles.conflictFocus : ''}`}
+    >
+      <p className={styles.conflictEyebrow}>Disputa por resolver</p>
+      <h2>Dos trabajadores aceptaron la misma solicitud</h2>
+      <p className={styles.conflictHelp}>
+        Elige cuál continúa con el servicio. Los demás quedarán cancelados automáticamente.
+      </p>
+      <div className={styles.conflictGrid}>
+        {candidates.map((request) => (
+          <article key={request.id} className={styles.candidate}>
+            <strong>{names[request[person.idField]] || person.label}</strong>
+            <span>{request.description || 'Sin descripción'}</span>
+            {request.scheduledDateTime && (
+              <span>
+                {new Date(request.scheduledDateTime).toLocaleString('es-CO', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+            )}
+            <button
+              type="button"
+              className={styles.chooseBtn}
+              onClick={() => onAction('acceptConflict', request.id)}
+            >
+              Elegir esta
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  ));
+}
+
+function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootId }) {
   const { requests, loading, error, act } = useRequests(role);
   const person = PERSON[role];
   const names = useUserNames(requests.map((request) => request[person.idField]));
+  const conflictRoots = new Set(
+    requests.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
+  );
+  const visible = role === 'CONTRATANTE'
+    ? requests.filter((r) => !(r.state === 'CONFLICT' && conflictRoots.has(r.rootId)))
+    : requests;
 
   return (
     <section className={styles.list}>
@@ -33,7 +85,16 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
       <ErrorMessage error={error} />
       {loading && <p>Cargando…</p>}
       {!loading && !error && requests.length === 0 && <p className={styles.empty}>{emptyText}</p>}
-      {requests.map((request) => (
+      {!loading && role === 'CONTRATANTE' && (
+        <ConflictGroups
+          requests={requests}
+          names={names}
+          person={person}
+          onAction={act}
+          focusRootId={focusRootId}
+        />
+      )}
+      {visible.map((request) => (
         <RequestCard
           key={request.id}
           request={request}
@@ -52,7 +113,7 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra }) {
 // El token sale de la sesión del login (httpClient lo envía solo); aquí solo se revisa el rol
 // para decidir qué mostrar: la seguridad real la aplica el back.
 // renderExtra(request) permite a cada página agregar algo a la tarjeta (por ejemplo, calificar).
-function RequestsView({ role, eyebrow, title, emptyText, renderExtra }) {
+function RequestsView({ role, eyebrow, title, emptyText, renderExtra, focusRootId }) {
   const roles = (getSession()?.roles ?? []).map(normalizeRole);
 
   return (
@@ -64,6 +125,7 @@ function RequestsView({ role, eyebrow, title, emptyText, renderExtra }) {
           title={title}
           emptyText={emptyText}
           renderExtra={renderExtra}
+          focusRootId={focusRootId}
         />
       ) : (
         <ErrorMessage error="No tienes permiso para ver esta página." />

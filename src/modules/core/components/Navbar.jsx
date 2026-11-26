@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../../../assets/Logo.png';
 import { getProfilePhotoUrl } from '../lib/imageService';
@@ -30,12 +30,46 @@ function getFirstName(name) {
   return first || 'Usuario';
 }
 
+const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
+
+function dismissedKey(userId) {
+  return `oy_notif_dismissed_${userId ?? 'anon'}`;
+}
+
+function readDismissed(userId) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(dismissedKey(userId)) ?? '[]');
+    return new Set(Array.isArray(stored) ? stored : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markDismissed(userId, key) {
+  const keys = readDismissed(userId);
+  keys.add(key);
+  try {
+    localStorage.setItem(dismissedKey(userId), JSON.stringify([...keys]));
+  } catch {
+    // sin almacenamiento disponible: la baja dura solo mientras dure la página
+  }
+}
+
+function notificationColorClass(color) {
+  if (color === 'blue') return styles.notifBlue;
+  if (color === 'warn') return styles.notifWarn;
+  return styles.notifPrimary;
+}
+
 function Navbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isAuthPage = pathname.startsWith('/auth');
   const [session, setSession] = useState(() => getSession());
-  const userRoles = (session?.roles ?? []).map((r) => String(r).toUpperCase());
+  const userRoles = useMemo(
+    () => (session?.roles ?? []).map((role) => normalizeRole(role)),
+    [session?.roles],
+  );
   const isAdmin = userRoles.includes('ADMIN');
 
   const [userName, setUserName] = useState(
@@ -117,40 +151,102 @@ function Navbar() {
     navigate('/auth', { replace: true });
   }
 
-  function loadNotifications() {
-    const items = [];
+  const loadNotifications = useCallback(() => {
+    const items = new Map();
     const tasks = [];
-    if (userRoles.includes('TRABAJADOR')) {
+    const roles = userRoles.map(normalizeRole);
+    const userId = session?.userId;
+
+    function add(item) {
+      // Clave estable: el mismo servicio puede cambiar de estado y pasar a ser una notificación nueva.
+      const key = `${item.id}:${item.state}`;
+      if (!items.has(key)) items.set(key, { ...item, key });
+    }
+
+    if (roles.includes('TRABAJADOR')) {
       tasks.push(
         requestsService
           .listMine('TRABAJADOR')
           .then((list) => {
-            (Array.isArray(list) ? list : [])
-              .filter((r) => r?.state === 'PENDING')
-              .forEach((r) =>
-                items.push({
+            (Array.isArray(list) ? list : []).forEach((r) => {
+              if (r?.state === 'PENDING') {
+                add({
                   id: r.id,
+                  state: 'PENDING',
                   title: 'Servicio entrante',
-                  description: r?.description || 'Nueva reparación cerca de ti',
+                  description: r.description || 'Nueva reparación cerca de ti',
                   actionLabel: 'Ver solicitud',
-                  link: '/mis-servicios',
+                  link: `/mis-servicios?request=${r.id}`,
                   color: 'blue',
-                }),
-              );
+                });
+              }
+              if (r?.state === 'CONFLICT') {
+                add({
+                  id: r.id,
+                  state: 'CONFLICT',
+                  title: 'Servicio en disputa',
+                  description: 'Dos trabajadores aceptaron; el contratante está eligiendo.',
+                  actionLabel: 'Ver estado',
+                  link: `/mis-servicios?request=${r.id}`,
+                  color: 'warn',
+                });
+              }
+              if (r?.state === 'COMPLETED') {
+                add({
+                  id: r.id,
+                  state: 'COMPLETED',
+                  title: 'Califica al contratante',
+                  description: 'El servicio quedó completado. Cuéntanos cómo fue.',
+                  actionLabel: 'Calificar servicio',
+                  link: `/solicitudes?calificar=${r.id}`,
+                  color: 'primary',
+                });
+              }
+            });
           })
           .catch(() => {}),
       );
     }
-    if (userRoles.includes('CONTRATANTE')) {
+
+    if (roles.includes('CONTRATANTE')) {
       tasks.push(
         requestsService
           .listMine('CONTRATANTE')
           .then((list) => {
-            (Array.isArray(list) ? list : [])
+            const all = Array.isArray(list) ? list : [];
+            const conflictRoots = new Set(
+              all.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
+            );
+            conflictRoots.forEach((rootId) => {
+              add({
+                id: `conflict-${rootId}`,
+                state: 'CONFLICT',
+                title: 'Disputa por resolver',
+                description: 'Dos trabajadores aceptaron tu solicitud. Elige cuál continúa.',
+                actionLabel: 'Elegir trabajador',
+                link: `/solicitudes?conflict=${rootId}`,
+                color: 'warn',
+              });
+            });
+            all
+              .filter((r) => r?.state === 'ACCEPTED' && !conflictRoots.has(r?.rootId))
+              .forEach((r) =>
+                add({
+                  id: r.id,
+                  state: 'ACCEPTED',
+                  title: 'Solicitud aceptada',
+                  description: r.description || 'Un trabajador aceptó tu solicitud.',
+                  actionLabel: 'Ver solicitud',
+                  link: `/solicitudes?request=${r.id}`,
+                  color: 'blue',
+                }),
+              );
+            all
               .filter((r) => r?.state === 'COMPLETED')
               .forEach((r) =>
-                items.push({
+                add({
                   id: r.id,
+                  state: 'COMPLETED',
                   title: 'Trabajo completado',
                   description: 'El trabajador marcó el servicio como terminado.',
                   actionLabel: 'Calificar el servicio',
@@ -162,14 +258,44 @@ function Navbar() {
           .catch(() => {}),
       );
     }
-    Promise.all(tasks).then(() => setNotifItems(items));
-  }
+
+    const dismissed = readDismissed(userId);
+    Promise.all(tasks).then(() => {
+      setNotifItems([...items.values()].filter((item) => !dismissed.has(item.key)));
+    });
+  }, [session?.userId, userRoles]);
+
+  useEffect(() => {
+    loadNotifications();
+    function refresh() {
+      loadNotifications();
+    }
+    function onRated(event) {
+      const id = event.detail?.id;
+      if (id) markDismissed(session?.userId, `${id}:COMPLETED`);
+      loadNotifications();
+    }
+    const events = ['oy-requests-changed', 'oy-profile-updated'];
+    events.forEach((event) => window.addEventListener(event, refresh));
+    window.addEventListener('oy-request-rated', onRated);
+    window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, refresh));
+      window.removeEventListener('oy-request-rated', onRated);
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [loadNotifications, session?.userId]);
 
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
         setMenuOpen(false);
         setDrawerOpen(false);
+        setNotifOpen(false);
       }
     }
     document.addEventListener('keydown', handleKeyDown);
@@ -229,14 +355,14 @@ function Navbar() {
                 )}
               </button>
               {notifOpen && (
-                <div className={styles.notifDropdown}>
+                <div className={styles.notifDropdown} role="dialog" aria-label="Notificaciones">
                   {notifItems.length === 0 ? (
                     <p className={styles.notifEmpty}>Sin notificaciones nuevas</p>
                   ) : (
-                    notifItems.map((item, index) => (
+                    notifItems.map((item) => (
                       <div
-                        key={`${item.id}-${index}`}
-                        className={`${styles.notifItem} ${item.color === 'blue' ? styles.notifBlue : styles.notifPrimary}`}
+                        key={item.key}
+                        className={`${styles.notifItem} ${notificationColorClass(item.color)}`}
                       >
                         <span className={styles.notifItemTitle}>{item.title}</span>
                         <span className={styles.notifItemDesc}>{item.description}</span>
@@ -244,8 +370,9 @@ function Navbar() {
                           type="button"
                           className={styles.notifActionBtn}
                           onClick={() => {
+                            markDismissed(session?.userId, item.key);
                             setNotifOpen(false);
-                            setNotifItems((prev) => prev.filter((n) => n.id !== item.id));
+                            setNotifItems((prev) => prev.filter((n) => n.key !== item.key));
                             navigate(item.link);
                           }}
                         >
