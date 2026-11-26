@@ -7,6 +7,7 @@ import { leerSesion } from '../sesion';
 import { PERFILES } from '../config';
 import { decimal, fecha } from '../formatos';
 import { useCuentaTrabajador } from '../hooks/useCuentaTrabajador';
+import { useFotoPerfil } from '../hooks/useFotoPerfil';
 import { usePerfilTrabajador } from '../hooks/usePerfilTrabajador';
 import Avatar from './Avatar';
 import Estrellas from './Estrellas';
@@ -24,6 +25,7 @@ function PerfilTrabajadorPage() {
   const [enReporte, setEnReporte] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const cuenta = useCuentaTrabajador(id, token);
+  const foto = useFotoPerfil(cuenta?.userId);
   // Nombre y oficio llegan desde la tarjeta de búsqueda. Si se abre el enlace directo, se piden a Worker y Users.
   const perfil = PERFILES[id] ?? location.state ?? (cuenta?.nombre ? cuenta : PERFIL_DESCONOCIDO);
   const puedeReportar = roles.includes('CONTRATANTE') || roles.includes('TRABAJADOR');
@@ -57,7 +59,7 @@ function PerfilTrabajadorPage() {
     <section className={styles.pagina}>
       <aside className={`card ${styles.resumen}`}>
         <div className={styles.persona}>
-          <Avatar nombre={perfil.nombre} tamano={72} />
+          <Avatar key={foto ?? 'sin-foto'} nombre={perfil.nombre} foto={foto} tamano={72} />
           <div>
             <h1>{perfil.nombre}</h1>
             <p>{perfil.oficio}</p>

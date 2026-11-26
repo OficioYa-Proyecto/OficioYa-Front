@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Avatar from '../../reputation/components/Avatar';
 import Estrellas from '../../reputation/components/Estrellas';
+import { useFotoPerfil } from '../../reputation/hooks/useFotoPerfil';
 import { decimal } from '../../reputation/formatos';
 import styles from './TarjetaTrabajador.module.css';
 
@@ -10,6 +11,8 @@ const NOMBRE_PENDIENTE = 'Profesional';
 function TarjetaTrabajador({ trabajador }) {
   const nombre = trabajador.nombreCompleto?.trim() || NOMBRE_PENDIENTE;
   const calificacion = trabajador.calificacionPromedio ?? 0;
+  // Search entrega la cuenta en Users; con ella se pide la foto a Imágenes.
+  const foto = useFotoPerfil(trabajador.usuarioId) ?? trabajador.fotoPerfilUrl;
   const detalles = [
     trabajador.zona,
     trabajador.tarifaAproximada == null
@@ -21,7 +24,7 @@ function TarjetaTrabajador({ trabajador }) {
   return (
     <article className={`card ${styles.tarjeta}`}>
       <div className={styles.persona}>
-        <Avatar nombre={trabajador.nombreCompleto} foto={trabajador.fotoPerfilUrl} />
+        <Avatar key={foto ?? 'sin-foto'} nombre={trabajador.nombreCompleto} foto={foto} />
         <div>
           <h3>{nombre}</h3>
           <p>{trabajador.oficio}</p>
