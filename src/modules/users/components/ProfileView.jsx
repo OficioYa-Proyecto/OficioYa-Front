@@ -11,6 +11,7 @@ import RoleSections from './RoleSections';
 import Icon from './Icon';
 import styles from './ProfileView.module.css';
 import { calculateAge } from '../utils/calculateAge';
+import MisCalificaciones from '../../reputation/components/MisCalificaciones';
 
 function ProfileView() {
   const { id } = useParams();
@@ -108,6 +109,7 @@ function ProfileView() {
                     localidad={esAdmin ? undefined : perfil.locality?.name}
                     nota="Datos protegidos. Solo administración puede consultarlos completos."
                 />
+                <MisCalificaciones usuarioId={perfil.id} roles={roles} />
               </aside>
               <RoleSections roles={roles} />
             </div>
