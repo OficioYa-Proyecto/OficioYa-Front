@@ -83,6 +83,27 @@ function Field({ id, label, required, hint, error, icon, children }) {
   );
 }
 
+function normalizeBarrio(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function barrioSuggestions(zones, query, limit = 6) {
+  const text = normalizeBarrio(query);
+  if (!text) return [];
+  return zones
+    .filter((zone) => normalizeBarrio(zone.name).includes(text))
+    .sort((a, b) => {
+      const startsA = normalizeBarrio(a.name).startsWith(text) ? 0 : 1;
+      const startsB = normalizeBarrio(b.name).startsWith(text) ? 0 : 1;
+      return startsA - startsB || a.name.localeCompare(b.name, 'es');
+    })
+    .slice(0, limit);
+}
+
 function AddressFields({ values, onChange, error }) {
   const address = { ...EMPTY_FORM.address, ...values.address };
   const invalid = Boolean(error);
@@ -150,6 +171,8 @@ function AddressFields({ values, onChange, error }) {
 
 function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
   const [submitted, setSubmitted] = useState(false);
+  const [showBarrios, setShowBarrios] = useState(false);
+  const [activeBarrio, setActiveBarrio] = useState(-1);
   const errors = validateDetails(values, new Date(), locked.schedule);
   const visible = submitted ? errors : {};
   const zones = useZones();
@@ -162,6 +185,10 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
     ? localities.items.filter((locality) =>
       allowedZones.some((zone) => zone.locality === locality.name))
     : localities.items;
+  const barrioCandidates = allowedZones.filter(
+    (zone) => !values.localityId || zone.locality === values.locality,
+  );
+  const barrios = showBarrios ? barrioSuggestions(barrioCandidates, values.neighborhood) : [];
   const trades = useTrades();
   const tradeGroups = groupByCategory(trades.items);
   // Desde Contratar solo se pueden elegir días en los que el trabajador tiene franjas disponibles.
@@ -178,7 +205,51 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
     const zoneIds = allowedZones
       .filter((zone) => zone.locality === localityName)
       .map((zone) => zone.id);
-    onChange({ localityId, locality: localityName, zoneIds });
+    const exact = allowedZones.find(
+      (zone) => zone.locality === localityName
+        && normalizeBarrio(zone.name) === normalizeBarrio(values.neighborhood),
+    );
+    onChange({ localityId, locality: localityName, zoneIds: exact ? [exact.id] : zoneIds });
+  };
+
+  const changeNeighborhood = (text) => {
+    const exact = barrioCandidates.find(
+      (zone) => normalizeBarrio(zone.name) === normalizeBarrio(text),
+    );
+    const fallback = values.localityId ? barrioCandidates.map((zone) => zone.id) : [];
+    onChange({ neighborhood: text, zoneIds: exact ? [exact.id] : fallback });
+    setShowBarrios(true);
+    setActiveBarrio(-1);
+  };
+
+  const selectBarrio = (zone) => {
+    const locality = localities.items.find((item) => item.name === zone.locality);
+    onChange({
+      neighborhood: zone.name,
+      zoneIds: [zone.id],
+      ...(values.locality
+        ? {}
+        : { localityId: locality ? String(locality.id) : '', locality: zone.locality || '' }),
+    });
+    setShowBarrios(false);
+    setActiveBarrio(-1);
+  };
+
+  const handleBarrioKeyDown = (event) => {
+    if (barrios.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveBarrio((index) => Math.min(index + 1, barrios.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveBarrio((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter' && activeBarrio >= 0) {
+      event.preventDefault();
+      selectBarrio(barrios[activeBarrio]);
+    } else if (event.key === 'Escape') {
+      setShowBarrios(false);
+      setActiveBarrio(-1);
+    }
   };
 
   const handleSubmit = (event) => {
@@ -284,16 +355,49 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
               label="Barrio"
               required
               error={visible.neighborhood}
-              hint="Escribe el barrio donde se hará el servicio."
+              hint="Escribe el barrio y selecciona una sugerencia para afinar la búsqueda."
             >
-              <input
-                type="text"
-                autoComplete="off"
-                maxLength={120}
-                placeholder="Ej.: Chapinero"
-                {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: true })}
-                {...bind('neighborhood')}
-              />
+              <div className={styles.autocomplete}>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  maxLength={120}
+                  placeholder="Ej.: Chapinero"
+                  role="combobox"
+                  aria-expanded={barrios.length > 0}
+                  aria-controls="field-neighborhood-suggestions"
+                  aria-autocomplete="list"
+                  aria-activedescendant={activeBarrio >= 0 ? `barrio-suggestion-${activeBarrio}` : undefined}
+                  {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: true })}
+                  value={values.neighborhood}
+                  onChange={(event) => changeNeighborhood(event.target.value)}
+                  onFocus={() => setShowBarrios(true)}
+                  onBlur={() => setShowBarrios(false)}
+                  onKeyDown={handleBarrioKeyDown}
+                />
+                {barrios.length > 0 && (
+                  <ul id="field-neighborhood-suggestions" role="listbox" className={styles.suggestions}>
+                    {barrios.map((zone, index) => (
+                      <li
+                        key={zone.id}
+                        id={`barrio-suggestion-${index}`}
+                        role="option"
+                        aria-selected={index === activeBarrio}
+                        className={styles.suggestion}
+                      >
+                        <button
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => selectBarrio(zone)}
+                        >
+                          <span>{zone.name}</span>
+                          {zone.locality && <small>{zone.locality}</small>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </Field>
           </div>
           {localities.status === 'error' && (

@@ -88,7 +88,7 @@ export const workersService = {
     }
     const filtros = { orden: 'MAYOR_A_MENOR' };
     if (Array.isArray(zoneIds) && zoneIds.length > 0) {
-      filtros.barrioIds = zoneIds.join(',');
+      filtros.barrioIds = zoneIds.filter((id) => id !== '' && id != null);
     }
     const day = weekdayOf(date);
     if (day) filtros.diaSemana = day;
