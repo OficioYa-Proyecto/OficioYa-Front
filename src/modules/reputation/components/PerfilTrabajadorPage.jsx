@@ -21,10 +21,13 @@ function PerfilTrabajadorPage() {
   const { id } = useParams();
   const location = useLocation();
   const { token, roles, userId: miUserId } = leerSesion();
-  const { cargando, error, reputacion, resenas, reintentar } = usePerfilTrabajador(id, token);
+  const cuenta = useCuentaTrabajador(id, token);
+  // Reputation guarda las reseñas con la cuenta de Users (el id que usa Service), no con el id del perfil de Worker.
+  // Mientras se conoce la cuenta, el perfil sigue "cargando"; si Worker no responde, se usa el id del perfil.
+  const idReputacion = cuenta?.trabajadorId === id ? (cuenta.userId ?? id) : null;
+  const { cargando, error, reputacion, resenas, reintentar } = usePerfilTrabajador(idReputacion, token);
   const [enReporte, setEnReporte] = useState(null);
   const [mensaje, setMensaje] = useState(null);
-  const cuenta = useCuentaTrabajador(id, token);
   const foto = useFotoPerfil(cuenta?.userId);
   // Nombre y oficio llegan desde la tarjeta de búsqueda. Si se abre el enlace directo, se piden a Worker y Users.
   const perfil = PERFILES[id] ?? location.state ?? (cuenta?.nombre ? cuenta : PERFIL_DESCONOCIDO);
@@ -70,7 +73,7 @@ function PerfilTrabajadorPage() {
           <strong>{decimal(reputacion.reputacion)}</strong>
           <div>
             <Estrellas valor={reputacion.reputacion} />
-            <p>{reputacion.totalResenas} reseñas de clientes</p>
+            <p>{reputacion.totalResenas} {reputacion.totalResenas === 1 ? 'reseña' : 'reseñas'} de clientes</p>
           </div>
         </div>
         {pausado && <p className={styles.aviso}>No acepta nuevos servicios por el momento.</p>}
