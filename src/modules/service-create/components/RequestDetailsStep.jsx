@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Button from '../../core/design-system/Button';
 import { ADDRESS_NOTE_MAX, DETAILS_FORM_ID, ROAD_TYPES } from '../config';
+import { useLocalities } from '../hooks/useLocalities';
 import { useTrades } from '../hooks/useTrades';
 import { useZones } from '../hooks/useZones';
 import {
@@ -8,7 +9,6 @@ import {
   availableDates,
   composeAddress,
   describeSchedule,
-  formatAvailableDate,
   formatSlot,
   normalizeDigits,
   normalizeNote,
@@ -17,6 +17,7 @@ import {
   todayISO,
   validateDetails,
 } from '../requestForm';
+import AvailableDatePicker from './AvailableDatePicker';
 import { CalendarIcon, ClockIcon, MapPinIcon } from './icons';
 import PhotoPicker from './PhotoPicker';
 import styles from './RequestDetailsStep.module.css';
@@ -39,18 +40,6 @@ function groupByCategory(trades) {
     }
     return a.category.localeCompare(b.category, 'es');
   });
-}
-
-function groupByLocality(zones) {
-  const groups = new Map();
-  for (const zone of zones) {
-    const key = zone.locality || 'Otros';
-    if (!groups.has(key)) {
-      groups.set(key, []);
-    }
-    groups.get(key).push(zone);
-  }
-  return Array.from(groups, ([locality, items]) => ({ locality, items }));
 }
 
 function fieldProps(id, error, { required = false, hint = false } = {}) {
@@ -92,6 +81,27 @@ function Field({ id, label, required, hint, error, icon, children }) {
       )}
     </div>
   );
+}
+
+function normalizeBarrio(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function barrioSuggestions(zones, query, limit = 6) {
+  const text = normalizeBarrio(query);
+  if (!text) return [];
+  return zones
+    .filter((zone) => normalizeBarrio(zone.name).includes(text))
+    .sort((a, b) => {
+      const startsA = normalizeBarrio(a.name).startsWith(text) ? 0 : 1;
+      const startsB = normalizeBarrio(b.name).startsWith(text) ? 0 : 1;
+      return startsA - startsB || a.name.localeCompare(b.name, 'es');
+    })
+    .slice(0, limit);
 }
 
 function AddressFields({ values, onChange, error }) {
@@ -161,14 +171,24 @@ function AddressFields({ values, onChange, error }) {
 
 function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
   const [submitted, setSubmitted] = useState(false);
+  const [showBarrios, setShowBarrios] = useState(false);
+  const [activeBarrio, setActiveBarrio] = useState(-1);
   const errors = validateDetails(values, new Date(), locked.schedule);
   const visible = submitted ? errors : {};
   const zones = useZones();
-  // Desde Contratar solo aparecen los barrios donde trabaja el trabajador elegido.
+  const localities = useLocalities();
+  // Desde Contratar solo se pueden elegir localidades donde trabaja el trabajador elegido.
   const allowedZones = locked.zoneIds
     ? zones.items.filter((zone) => locked.zoneIds.includes(zone.id))
     : zones.items;
-  const groups = groupByLocality(allowedZones);
+  const allowedLocalities = locked.zoneIds
+    ? localities.items.filter((locality) =>
+      allowedZones.some((zone) => zone.locality === locality.name))
+    : localities.items;
+  const barrioCandidates = allowedZones.filter(
+    (zone) => !values.localityId || zone.locality === values.locality,
+  );
+  const barrios = showBarrios ? barrioSuggestions(barrioCandidates, values.neighborhood) : [];
   const trades = useTrades();
   const tradeGroups = groupByCategory(trades.items);
   // Desde Contratar solo se pueden elegir días en los que el trabajador tiene franjas disponibles.
@@ -178,6 +198,59 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
     value: values[name],
     onChange: (event) => onChange({ [name]: event.target.value }),
   });
+
+  const changeLocality = (localityId) => {
+    const locality = localities.items.find((item) => String(item.id) === String(localityId));
+    const localityName = locality?.name ?? '';
+    const zoneIds = allowedZones
+      .filter((zone) => zone.locality === localityName)
+      .map((zone) => zone.id);
+    const exact = allowedZones.find(
+      (zone) => zone.locality === localityName
+        && normalizeBarrio(zone.name) === normalizeBarrio(values.neighborhood),
+    );
+    onChange({ localityId, locality: localityName, zoneIds: exact ? [exact.id] : zoneIds });
+  };
+
+  const changeNeighborhood = (text) => {
+    const exact = barrioCandidates.find(
+      (zone) => normalizeBarrio(zone.name) === normalizeBarrio(text),
+    );
+    const fallback = values.localityId ? barrioCandidates.map((zone) => zone.id) : [];
+    onChange({ neighborhood: text, zoneIds: exact ? [exact.id] : fallback });
+    setShowBarrios(true);
+    setActiveBarrio(-1);
+  };
+
+  const selectBarrio = (zone) => {
+    const locality = localities.items.find((item) => item.name === zone.locality);
+    onChange({
+      neighborhood: zone.name,
+      zoneIds: [zone.id],
+      ...(values.locality
+        ? {}
+        : { localityId: locality ? String(locality.id) : '', locality: zone.locality || '' }),
+    });
+    setShowBarrios(false);
+    setActiveBarrio(-1);
+  };
+
+  const handleBarrioKeyDown = (event) => {
+    if (barrios.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveBarrio((index) => Math.min(index + 1, barrios.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveBarrio((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter' && activeBarrio >= 0) {
+      event.preventDefault();
+      selectBarrio(barrios[activeBarrio]);
+    } else if (event.key === 'Escape') {
+      setShowBarrios(false);
+      setActiveBarrio(-1);
+    }
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -255,42 +328,90 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
         </div>
 
         <div className={styles.column}>
-          <Field
-            id="field-neighborhood"
-            label="Barrio"
-            required
-            error={visible.neighborhood}
-            icon={<MapPinIcon size={18} />}
-            hint={locked.zoneIds ? 'Solo aparecen los barrios donde trabaja el trabajador que elegiste.' : undefined}
-          >
-            <select
-              {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: Boolean(locked.zoneIds) })}
-              value={values.neighborhood}
-              onChange={(event) => {
-                const name = event.target.value;
-                const zone = zones.items.find((item) => item.name === name);
-                onChange({ neighborhood: name, neighborhoodId: zone ? zone.id : '' });
-              }}
+          <div className={styles.row}>
+            <Field
+              id="field-localityId"
+              label="Localidad"
+              required
+              error={visible.localityId}
+              icon={<MapPinIcon size={18} />}
+              hint={locked.zoneIds ? 'Solo aparecen las localidades donde trabaja el trabajador que elegiste.' : undefined}
             >
-              <option value="">{zones.status === 'loading' ? 'Cargando barrios' : 'Selecciona'}</option>
-              {groups.map((group) => (
-                <optgroup key={group.locality} label={group.locality}>
-                  {group.items.map((zone) => (
-                    <option key={zone.id} value={zone.name}>
-                      {zone.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </Field>
-          {zones.status === 'error' && (
+              <select
+                {...fieldProps('field-localityId', visible.localityId, { required: true, hint: Boolean(locked.zoneIds) })}
+                value={values.localityId}
+                onChange={(event) => changeLocality(event.target.value)}
+              >
+                <option value="">{localities.status === 'loading' ? 'Cargando localidades' : 'Selecciona'}</option>
+                {allowedLocalities.map((locality) => (
+                  <option key={locality.id} value={locality.id}>
+                    {locality.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field
+              id="field-neighborhood"
+              label="Barrio"
+              required
+              error={visible.neighborhood}
+              hint="Escribe el barrio y selecciona una sugerencia para afinar la búsqueda."
+            >
+              <div className={styles.autocomplete}>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  maxLength={120}
+                  placeholder="Ej.: Chapinero"
+                  role="combobox"
+                  aria-expanded={barrios.length > 0}
+                  aria-controls="field-neighborhood-suggestions"
+                  aria-autocomplete="list"
+                  aria-activedescendant={activeBarrio >= 0 ? `barrio-suggestion-${activeBarrio}` : undefined}
+                  {...fieldProps('field-neighborhood', visible.neighborhood, { required: true, hint: true })}
+                  value={values.neighborhood}
+                  onChange={(event) => changeNeighborhood(event.target.value)}
+                  onFocus={() => setShowBarrios(true)}
+                  onBlur={() => setShowBarrios(false)}
+                  onKeyDown={handleBarrioKeyDown}
+                />
+                {barrios.length > 0 && (
+                  <ul id="field-neighborhood-suggestions" role="listbox" className={styles.suggestions}>
+                    {barrios.map((zone, index) => (
+                      <li
+                        key={zone.id}
+                        id={`barrio-suggestion-${index}`}
+                        role="option"
+                        aria-selected={index === activeBarrio}
+                        className={styles.suggestion}
+                      >
+                        <button
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => selectBarrio(zone)}
+                        >
+                          <span>{zone.name}</span>
+                          {zone.locality && <small>{zone.locality}</small>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </Field>
+          </div>
+          {localities.status === 'error' && (
             <div className={styles.hint} role="alert">
-              <p>No pudimos cargar los barrios.</p>
-              <Button type="button" variant="secondary" onClick={zones.retry}>
+              <p>No pudimos cargar las localidades.</p>
+              <Button type="button" variant="secondary" onClick={localities.retry}>
                 Reintentar
               </Button>
             </div>
+          )}
+          {zones.status === 'error' && (
+            <p className={styles.hint}>
+              No pudimos cargar las zonas para afinar la búsqueda; puedes continuar con el barrio escrito.
+            </p>
           )}
 
           <Field
@@ -314,27 +435,32 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
           </Field>
 
           <div className={`${styles.row} ${styles.rowEven}`}>
-            <Field
-              id="field-date"
-              label="Fecha"
-              required
-              error={visible.date}
-              icon={<CalendarIcon size={18} />}
-            >
-              {locked.schedule ? (
-                <select
-                  {...fieldProps('field-date', visible.date, { required: true })}
-                  value={values.date}
-                  onChange={(event) => changeDate(event.target.value)}
+            {locked.schedule ? (
+              <div className={styles.datePicker}>
+                <Field
+                  id="field-date"
+                  label="Fecha"
+                  required
+                  error={visible.date}
+                  icon={<CalendarIcon size={18} />}
                 >
-                  <option value="">Selecciona un día disponible</option>
-                  {scheduledDates.map((date) => (
-                    <option key={date} value={date}>
-                      {formatAvailableDate(date)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
+                  <AvailableDatePicker
+                    key={scheduledDates.join('|')}
+                    dates={scheduledDates}
+                    value={values.date}
+                    onChange={changeDate}
+                    {...fieldProps('field-date', visible.date, { required: true })}
+                  />
+                </Field>
+              </div>
+            ) : (
+              <Field
+                id="field-date"
+                label="Fecha"
+                required
+                error={visible.date}
+                icon={<CalendarIcon size={18} />}
+              >
                 <input
                   type="date"
                   min={todayISO()}
@@ -342,8 +468,8 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
                   value={values.date}
                   onChange={(event) => changeDate(event.target.value)}
                 />
-              )}
-            </Field>
+              </Field>
+            )}
             <Field
               id="field-time"
               label="Hora"

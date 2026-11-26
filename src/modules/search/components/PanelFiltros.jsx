@@ -119,45 +119,56 @@ function SelectorCategoria({ oficios, oficioId, alElegir }) {
   const [abierta, setAbierta] = useState(null);
   const visible = abierta ?? grupoElegido;
 
+  // "Todos los oficios" quita el oficio elegido y vuelve a mostrar a todos los trabajadores.
+  const todos = (
+    <Opciones opciones={[{ valor: '', nombre: 'Todos los oficios' }]} valor={oficioId ?? ''} alElegir={() => alElegir(null)} />
+  );
+
   // Sin categorías (por ejemplo, si Search aún no las entrega) se muestra la lista de oficios como antes.
   if (grupos.length <= 1) {
     return (
-      <Opciones
-        opciones={oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
-        valor={oficioId ?? ''}
-        alElegir={alElegir}
-      />
+      <>
+        {todos}
+        <Opciones
+          opciones={oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
+          valor={oficioId ?? ''}
+          alElegir={alElegir}
+        />
+      </>
     );
   }
 
   return (
-    <ul className={styles.categorias}>
-      {grupos.map((grupo) => {
-        const expandida = grupo.id === visible;
-        return (
-          <li key={grupo.id}>
-            <button
-              type="button"
-              aria-expanded={expandida}
-              className={grupo.id === grupoElegido ? `${styles.categoria} ${styles.categoriaElegida}` : styles.categoria}
-              onClick={() => setAbierta(expandida ? '' : grupo.id)}
-            >
-              <span>{grupo.nombre}</span>
-              <span aria-hidden="true" className={styles.flecha}>{expandida ? '−' : '+'}</span>
-            </button>
-            {expandida && (
-              <div className={styles.oficiosCategoria}>
-                <Opciones
-                  opciones={grupo.oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
-                  valor={oficioId ?? ''}
-                  alElegir={alElegir}
-                />
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      {todos}
+      <ul className={styles.categorias}>
+        {grupos.map((grupo) => {
+          const expandida = grupo.id === visible;
+          return (
+            <li key={grupo.id}>
+              <button
+                type="button"
+                aria-expanded={expandida}
+                className={grupo.id === grupoElegido ? `${styles.categoria} ${styles.categoriaElegida}` : styles.categoria}
+                onClick={() => setAbierta(expandida ? '' : grupo.id)}
+              >
+                <span>{grupo.nombre}</span>
+                <span aria-hidden="true" className={styles.flecha}>{expandida ? '−' : '+'}</span>
+              </button>
+              {expandida && (
+                <div className={styles.oficiosCategoria}>
+                  <Opciones
+                    opciones={grupo.oficios.map((oficio) => ({ valor: oficio.id, nombre: oficio.nombre }))}
+                    valor={oficioId ?? ''}
+                    alElegir={alElegir}
+                  />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 

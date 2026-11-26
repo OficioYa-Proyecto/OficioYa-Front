@@ -463,6 +463,9 @@ export default function HomePage() {
             <Link to="/worker/dashboard" className={styles.secondaryPillBtn}>
               Mi perfil de trabajo
             </Link>
+            <Link to="/solicitudes" className={styles.secondaryPillBtn}>
+              Mis solicitudes
+            </Link>
           </div>
         </section>
 
@@ -778,6 +781,9 @@ export default function HomePage() {
               </span>
               <span className={styles.heroAvailableLabel}>Disponible ahora</span>
             </button>
+            <Link to="/mis-servicios" className={styles.secondaryPillBtn}>
+              Mis solicitudes
+            </Link>
           </div>
         </section>
 
@@ -1042,6 +1048,9 @@ export default function HomePage() {
           >
             Cómo funciona
           </button>
+          <Link to="/solicitudes" className={styles.secondaryPillBtn}>
+            Mis solicitudes
+          </Link>
         </div>
       </section>
 

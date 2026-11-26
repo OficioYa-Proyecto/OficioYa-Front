@@ -60,19 +60,32 @@ export function useRequests(role) {
       // La tarjeta cambia al instante; la petición (y su correo) termina en segundo plano.
       const next = NEXT_STATE[action];
       if (next) {
-        setRequests((current) =>
-          current.map((request) => (request.id === id ? { ...request, state: next } : request)),
-        );
+        setRequests((current) => {
+          const target = current.find((request) => request.id === id);
+          return current.map((request) => {
+            if (request.id === id) return { ...request, state: next };
+            // Al elegir en una disputa, las demás del mismo grupo quedan canceladas.
+            if (action === 'acceptConflict' && target?.rootId && request.rootId === target.rootId) {
+              return { ...request, state: 'CANCELED' };
+            }
+            return request;
+          });
+        });
       }
       try {
         await requestsService[action](id);
         reload();
+        window.dispatchEvent(
+          new CustomEvent('oy-requests-changed', {
+            detail: { action, id, role, nextState: next },
+          }),
+        );
       } catch (e) {
         setError(e.message);
         reload();
       }
     },
-    [reload],
+    [reload, role],
   );
 
   return { requests, loading, error, reload, act };

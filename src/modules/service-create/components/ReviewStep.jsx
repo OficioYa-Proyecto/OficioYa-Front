@@ -5,7 +5,8 @@ import styles from './ReviewStep.module.css';
 
 function ReviewStep({ values, onEditWorkers, busy, error }) {
   const photo = values.photos[0];
-  const neighborhood = values.neighborhood.trim();
+  const locality = String(values.locality ?? '').trim();
+  const neighborhood = String(values.neighborhood ?? '').trim();
   const address = values.exactAddress.trim();
   const note = cleanNote(values.addressNote);
   const count = values.workers.length;
@@ -26,7 +27,7 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
           </p>
           <h2>{deriveTitle(values.description)}</h2>
           <p className={styles.heroMeta}>
-            {neighborhood} · {formatSchedule(values.date, values.time, { short: true })}
+            {[neighborhood, locality].filter(Boolean).join(', ')} · {formatSchedule(values.date, values.time, { short: true })}
           </p>
         </div>
       </section>
@@ -78,7 +79,7 @@ function ReviewStep({ values, onEditWorkers, busy, error }) {
               <span className={styles.detailText}>
                 <span className={styles.detailLabel}>Dirección</span>
                 <span className={styles.detailValue}>
-                  {address}, {neighborhood}
+                  {address}, {[neighborhood, locality].filter(Boolean).join(', ')}
                 </span>
               </span>
             </li>

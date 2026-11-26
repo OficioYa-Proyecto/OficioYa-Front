@@ -14,3 +14,11 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* Mientras descarga, la foto no ocupa espacio y se ven las iniciales. */
+.avatar img.cargando {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}

@@ -291,7 +291,7 @@ function UserTable() {
 }
 
 // Foto de perfil del usuario (o sus iniciales si no tiene), igual que en ProfileHeader
-function Avatar({ userId, nombre }) {
+export function Avatar({ userId, nombre }) {
     const [foto, setFoto] = useState(fotosCargadas.get(userId) ?? null);
     const partes = (nombre || 'Usuario').trim().split(/\s+/);
     const iniciales = (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : partes[0][1] ?? '')).toUpperCase();
@@ -345,7 +345,6 @@ function porcentaje(parte, total) {
     return total === 0 ? '0 %' : `${Math.round((parte * 100) / total)} %`;
 }
 
-// Mismo formato que el back: primera y última letra antes de la @ (carlos@gmail.com -> c**s@gmail.com)
 function enmascararCorreo(correo) {
     if (!correo) return '';
     const idx = correo.indexOf('@');

@@ -124,10 +124,64 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.datePicker {
+  min-width: 0;
+}
+
+.datePicker .withIcon > svg {
+  top: 24px;
+}
+
 .error {
   margin: 0;
   font-size: 0.8rem;
   color: var(--color-danger);
+}
+
+.autocomplete {
+  position: relative;
+}
+
+.suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 12%);
+}
+
+.suggestion button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.suggestion button:hover,
+.suggestion button:focus-visible {
+  background: var(--color-surface-alt);
+  outline: none;
+}
+
+.suggestion small {
+  color: var(--color-text-muted);
 }
 
 @media (min-width: 900px) {

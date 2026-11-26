@@ -8,53 +8,91 @@ const FILTROS_INICIALES = {
   diaSemana: '',
   franjaHoraria: '',
   soloDisponibleAhora: false,
-  orden: 'MAYOR_A_MENOR',
+  orden: 'PERFIL_COMPLETO',
 };
 
+// Una búsqueda ya hecha se reutiliza durante este tiempo: al volver desde un perfil no se espera otra vez.
+const VIGENCIA_MS = 2 * 60 * 1000;
+
+// Se conserva mientras la página esté abierta (se pierde al recargar). Guarda lo último que se buscó, los
+// resultados recientes y los catálogos, para que al volver a Buscar todo aparezca de inmediato.
+const memoria = {
+  estado: { oficioElegido: null, texto: null, filtros: FILTROS_INICIALES },
+  resultados: new Map(),
+  oficios: null,
+  zonas: null,
+};
+
+function enMemoria(clave) {
+  const guardado = memoria.resultados.get(clave);
+  return guardado && Date.now() - guardado.en < VIGENCIA_MS ? guardado : null;
+}
+
 export function useBusqueda(token) {
-  const [oficios, setOficios] = useState([]);
-  const [oficiosCargados, setOficiosCargados] = useState(false);
-  const [zonas, setZonas] = useState([]);
+  const [oficios, setOficios] = useState(() => memoria.oficios ?? []);
+  const [zonas, setZonas] = useState(() => memoria.zonas ?? []);
   const [errorOficios, setErrorOficios] = useState(null);
-  const [oficioElegido, setOficioElegido] = useState(null);
-  const [texto, setTexto] = useState(null);
-  const [filtros, setFiltros] = useState(FILTROS_INICIALES);
+  const [oficioElegido, setOficioElegido] = useState(memoria.estado.oficioElegido);
+  const [texto, setTexto] = useState(memoria.estado.texto);
+  const [filtros, setFiltros] = useState(memoria.estado.filtros);
   const [intento, setIntento] = useState(0);
   const [respuesta, setRespuesta] = useState(null);
 
-  // Sin elegir nada se muestra el primer oficio, como en el mockup.
-  const oficioId = oficioElegido ?? oficios[0]?.id ?? null;
+  // Sin elegir oficio ni escribir nada se muestran todos los trabajadores.
+  const oficioId = oficioElegido;
   const clave = JSON.stringify({ oficioId, texto, filtros, intento });
-  // Sin oficios en el catálogo no hay nada que buscar: no se queda "cargando" para siempre.
-  const sinCatalogo = oficiosCargados && oficioId === null && texto === null;
-  const cargando = !sinCatalogo && respuesta?.clave !== clave;
+  const vigente = respuesta?.clave === clave ? respuesta : enMemoria(clave);
+  const cargando = !vigente;
 
   useEffect(() => {
-    searchService
-      .listarOficios(token)
-      .then((lista) => setOficios(Array.isArray(lista) ? lista : []))
-      .catch((error) => setErrorOficios(error.message))
-      .finally(() => setOficiosCargados(true));
+    memoria.estado = { oficioElegido, texto, filtros };
+  }, [oficioElegido, texto, filtros]);
+
+  useEffect(() => {
+    if (memoria.oficios === null) {
+      searchService
+        .listarOficios(token)
+        .then((lista) => {
+          memoria.oficios = Array.isArray(lista) ? lista : [];
+          setOficios(memoria.oficios);
+        })
+        .catch((error) => setErrorOficios(error.message));
+    }
     // Si las zonas no cargan, la búsqueda sigue funcionando; solo queda "Todas las zonas".
-    searchService
-      .listarZonas(token)
-      .then((lista) => setZonas(Array.isArray(lista) ? lista : []))
-      .catch(() => setZonas([]));
+    if (memoria.zonas === null) {
+      searchService
+        .listarZonas(token)
+        .then((lista) => {
+          memoria.zonas = Array.isArray(lista) ? lista : [];
+          setZonas(memoria.zonas);
+        })
+        .catch(() => setZonas([]));
+    }
   }, [token]);
 
   useEffect(() => {
-    if (oficioId === null && texto === null) {
+    if (enMemoria(clave)) {
       return undefined;
     }
-    let vigente = true;
-    const peticion = texto !== null
-      ? searchService.buscarPorTexto(texto, filtros, token)
-      : searchService.buscarPorOficio(oficioId, filtros, token);
+    let activa = true;
+    let peticion;
+    if (texto !== null) {
+      peticion = searchService.buscarPorTexto(texto, filtros, token);
+    } else if (oficioId !== null) {
+      peticion = searchService.buscarPorOficio(oficioId, filtros, token);
+    } else {
+      peticion = searchService.buscarTodos(filtros, token);
+    }
     peticion
-      .then((resultado) => vigente && setRespuesta({ clave, resultado }))
-      .catch((error) => vigente && setRespuesta({ clave, error: error.message }));
+      .then((resultado) => {
+        memoria.resultados.set(clave, { clave, resultado, en: Date.now() });
+        if (activa) {
+          setRespuesta({ clave, resultado });
+        }
+      })
+      .catch((error) => activa && setRespuesta({ clave, error: error.message }));
     return () => {
-      vigente = false;
+      activa = false;
     };
   }, [clave, oficioId, texto, filtros, token]);
 
@@ -64,10 +102,11 @@ export function useBusqueda(token) {
     oficioId,
     texto,
     filtros,
-    cargando: cargando && !errorOficios,
-    sinCatalogo,
-    resultado: cargando || sinCatalogo ? null : respuesta?.resultado,
-    error: errorOficios ?? (cargando || sinCatalogo ? null : respuesta?.error),
+    cargando,
+    // Si el catálogo de oficios no carga, el listado sigue funcionando; solo no hay categorías para elegir.
+    errorOficios,
+    resultado: vigente?.resultado,
+    error: vigente?.error,
     elegirOficio(id) {
       setTexto(null);
       setOficioElegido(id);
@@ -80,6 +119,7 @@ export function useBusqueda(token) {
       setFiltros((actuales) => ({ ...FILTROS_INICIALES, orden: actuales.orden }));
     },
     reintentar() {
+      // Un reintento siempre consulta de nuevo: la clave cambia y no está en memoria.
       setIntento((actual) => actual + 1);
     },
   };
