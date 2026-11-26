@@ -6,10 +6,12 @@ import ErrorMessage from '../../core/components/ErrorMessage';
 import { leerSesion } from '../sesion';
 import { PERFILES } from '../config';
 import { decimal, fecha } from '../formatos';
+import { useAutores } from '../hooks/useAutores';
 import { useCuentaTrabajador } from '../hooks/useCuentaTrabajador';
 import { useFotoPerfil } from '../hooks/useFotoPerfil';
 import { usePerfilTrabajador } from '../hooks/usePerfilTrabajador';
 import Avatar from './Avatar';
+import AutorResena from './AutorResena';
 import { DetallesTrabajador, TrabajosRealizados } from './DetallesTrabajador';
 import Estrellas from './Estrellas';
 import ReportarModal from './ReportarModal';
@@ -27,6 +29,7 @@ function PerfilTrabajadorPage() {
   // Mientras se conoce la cuenta, el perfil sigue "cargando"; si Worker no responde, se usa el id del perfil.
   const idReputacion = cuenta?.trabajadorId === id ? (cuenta.userId ?? id) : null;
   const { cargando, error, reputacion, resenas, reintentar } = usePerfilTrabajador(idReputacion, token);
+  const autores = useAutores(resenas, token);
   const [enReporte, setEnReporte] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const foto = useFotoPerfil(cuenta?.userId);
@@ -107,11 +110,9 @@ function PerfilTrabajadorPage() {
         {resenas.slice(0, RESENAS_VISIBLES).map((resena) => (
           <article key={resena.codigo} className={`card ${styles.resena}`}>
             <div className={styles.autor}>
-              <Avatar nombre="Cliente" tamano={38} />
-              <div>
-                <strong>Cliente</strong>
+              <AutorResena autorId={resena.autorId} nombre={autores[resena.autorId]}>
                 <small>{fecha(resena.fechaCreacion)}</small>
-              </div>
+              </AutorResena>
               {puedeReportar && (
                 <Button variant="secondary" onClick={() => setEnReporte(resena)}>
                   Reportar
