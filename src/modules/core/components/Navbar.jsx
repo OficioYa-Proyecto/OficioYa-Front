@@ -261,6 +261,7 @@ function Navbar() {
       );
     }
 
+    // RF-13. El administrador ve en la campana las peticiones pendientes para quitar un rol
     if (roles.includes('ADMIN')) {
       tasks.push(
         listarPeticionesRol({ status: 'PENDING' })
@@ -269,7 +270,7 @@ function Navbar() {
               add({
                 id: `rr-${p.id}`,
                 state: 'PENDING',
-                title: 'Nueva petición de cambio de rol',
+                title: 'Nueva petición',
                 description: `${p.userName ?? 'Un usuario'} pide dejar de ser ${NOMBRES_ROL[p.role]?.toLowerCase() ?? p.role}.`,
                 actionLabel: 'Revisar petición',
                 link: '/admin/role-requests',
