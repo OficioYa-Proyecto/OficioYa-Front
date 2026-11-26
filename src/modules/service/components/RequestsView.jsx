@@ -55,7 +55,7 @@ function ConflictGroups({ requests, names, person, profiles, zones, onAction, fo
       className={`${styles.conflict} ${focusRootId === rootId ? styles.conflictFocus : ''}`}
     >
       <p className={styles.conflictEyebrow}>Disputa por resolver</p>
-      <h2>Dos trabajadores aceptaron la misma solicitud</h2>
+      <h2>{candidates.length} trabajadores aceptaron la misma solicitud</h2>
       <p className={styles.conflictHelp}>
         Elige cuál continúa con el servicio. Los demás quedarán cancelados automáticamente.
       </p>
@@ -100,8 +100,54 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
   const conflictRoots = new Set(
     requests.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
   );
+  // Cuando ya se eligió un trabajador, los demás quedan cancelados y no deben
+  // seguir apareciendo en Mis solicitudes.
+  const resolvedConflictRoots = new Set(
+    requests
+      .filter((r) => r?.state === 'CANCELED' && r?.rootId
+        && requests.some((s) => s?.rootId === r.rootId && s?.state === 'ACCEPTED'))
+      .map((r) => r.rootId),
+  );
+
+  // Una solicitud enviada a varios trabajadores comparte rootId; en la lista del
+  // contratante se muestra una sola tarjeta por grupo para evitar duplicados.
+  const representativeIds = new Set();
+  if (role === 'CONTRATANTE') {
+    const groups = new Map();
+    requests.forEach((request) => {
+      const key = request?.rootId
+        ?? `${request?.description ?? ''}|${request?.scheduledDateTime ?? ''}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(request);
+    });
+    const priority = {
+      ACCEPTED: 5,
+      PENDING: 3,
+      COMPLETED: 2,
+      REJECTED: 1,
+      EXPIRED: 1,
+      CANCELED: 0,
+    };
+    groups.forEach((group) => {
+      const chosen = group.reduce((best, current) => {
+        if (!best) return current;
+        const bestPriority = priority[best?.state] ?? 0;
+        const currentPriority = priority[current?.state] ?? 0;
+        return currentPriority > bestPriority ? current : best;
+      }, null);
+      if (chosen?.id) representativeIds.add(chosen.id);
+    });
+  }
+
   const visible = role === 'CONTRATANTE'
-    ? requests.filter((r) => !(r.state === 'CONFLICT' && conflictRoots.has(r.rootId)))
+    ? requests.filter((r) => {
+        // Todo lo que pertenece a una disputa se muestra únicamente en el bloque
+        // "Disputa por resolver", nunca como tarjetas sueltas.
+        if (r?.rootId && conflictRoots.has(r.rootId)) return false;
+        if (r?.state === 'CANCELED' && resolvedConflictRoots.has(r.rootId)) return false;
+        if (!representativeIds.has(r.id)) return false;
+        return true;
+      })
     : requests;
 
   return (
