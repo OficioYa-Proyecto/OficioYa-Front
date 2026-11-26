@@ -10,6 +10,7 @@ import { useCuentaTrabajador } from '../hooks/useCuentaTrabajador';
 import { useFotoPerfil } from '../hooks/useFotoPerfil';
 import { usePerfilTrabajador } from '../hooks/usePerfilTrabajador';
 import Avatar from './Avatar';
+import { DetallesTrabajador, TrabajosRealizados } from './DetallesTrabajador';
 import Estrellas from './Estrellas';
 import ReportarModal from './ReportarModal';
 import styles from './PerfilTrabajadorPage.module.css';
@@ -92,9 +93,11 @@ function PerfilTrabajadorPage() {
             Contratar
           </Link>
         )}
+        <DetallesTrabajador cuenta={cuenta} token={token} />
       </aside>
 
       <div className={styles.resenas}>
+        <TrabajosRealizados fotos={cuenta?.fotos} />
         <div>
           <span className="eyebrow">Reseñas</span>
           <h2>Reseñas recientes</h2>
