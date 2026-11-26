@@ -219,12 +219,19 @@ function Navbar() {
             const conflictRoots = new Set(
               all.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
             );
+            const conflictCounts = all
+              .filter((r) => r?.state === 'CONFLICT' && r?.rootId)
+              .reduce((counts, r) => {
+                counts.set(r.rootId, (counts.get(r.rootId) || 0) + 1);
+                return counts;
+              }, new Map());
             conflictRoots.forEach((rootId) => {
+              const count = conflictCounts.get(rootId) || 2;
               add({
                 id: `conflict-${rootId}`,
                 state: 'CONFLICT',
                 title: 'Disputa por resolver',
-                description: 'Dos trabajadores aceptaron tu solicitud. Elige cuál continúa.',
+                description: `${count} trabajadores aceptaron tu solicitud. Elige cuál continúa.`,
                 actionLabel: 'Elegir trabajador',
                 link: `/solicitudes?conflict=${rootId}`,
                 color: 'warn',
