@@ -10,14 +10,10 @@ export function actionsFor(role, state) {
       actions.push({ key: 'complete', label: 'Marcar cumplida' });
       actions.push({ key: 'cancel', label: 'Cancelar', variant: 'secondary' });
     }
-    if (state === 'CONFLICT') {
-      actions.push({ key: 'cancel', label: 'Cancelar', variant: 'secondary' });
-    }
   }
   if (role === 'CONTRATANTE') {
     if (state === 'CONFLICT') {
       actions.push({ key: 'acceptConflict', label: 'Elegir esta' });
-      actions.push({ key: 'cancel', label: 'Cancelar', variant: 'secondary' });
     }
     if (['PENDING', 'ACCEPTED'].includes(state)) {
       actions.push({ key: 'cancel', label: 'Cancelar', variant: 'secondary' });

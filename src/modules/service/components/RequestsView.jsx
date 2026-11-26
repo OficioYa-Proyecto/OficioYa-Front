@@ -1,7 +1,5 @@
 import ErrorMessage from '../../core/components/ErrorMessage';
 import { getSession } from '../../core/lib/session';
-import { formatMoney, unitName } from '../../workers/components/formats';
-import { useConflictWorkers } from '../hooks/useConflictWorkers';
 import { useRequests } from '../hooks/useRequests';
 import { useUserNames } from '../hooks/useUserNames';
 import { actionsFor } from '../requestActions';
@@ -18,29 +16,7 @@ const PERSON = {
 
 const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
 
-const normalizeText = (value) =>
-  String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
-
-// Tarifa y cercanía se sacan del perfil del trabajador; el nombre viene de Users.
-function conflictDetails(request, profile, zones) {
-  const trade = profile?.primaryTrade ?? profile?.secondaryTrades?.[0];
-  const rate = trade?.approxRate == null
-    ? 'Tarifa por acordar'
-    : `${formatMoney(trade.approxRate)} ${unitName(trade.rateUnit)}`.trim();
-  const coverage = (profile?.zoneIds ?? [])
-    .map((zoneId) => zones.find((zone) => String(zone.id) === String(zoneId)))
-    .filter(Boolean);
-  const place = [request.neighborhood, request.locality].map(normalizeText).filter(Boolean);
-  const sameNeighborhood = coverage.some((zone) => place.includes(normalizeText(zone.name)));
-  const sameLocality = coverage.some((zone) => place.includes(normalizeText(zone.locality)));
-  let proximity = 'Sin zona de cobertura';
-  if (sameNeighborhood) proximity = 'En tu barrio';
-  else if (sameLocality) proximity = 'En tu localidad';
-  else if (coverage.length) proximity = `Cubre ${coverage.map((zone) => zone.name).join(', ')}`;
-  return { rate, proximity };
-}
-
-function ConflictGroups({ requests, names, person, profiles, zones, onAction, focusRootId }) {
+function ConflictGroups({ requests, names, person, onAction, focusRootId }) {
   const groups = new Map();
   requests
     .filter((request) => request?.state === 'CONFLICT' && request?.rootId)
@@ -60,45 +36,27 @@ function ConflictGroups({ requests, names, person, profiles, zones, onAction, fo
         Elige cuál continúa con el servicio. Los demás quedarán cancelados automáticamente.
       </p>
       <div className={styles.conflictGrid}>
-        {candidates.map((request) => {
-          const profile = profiles[request.workerId];
-          const { rate, proximity } = conflictDetails(request, profile, zones);
-          return (
-            <article key={request.id} className={styles.candidate}>
-              <strong>{names[request[person.idField]] || person.label}</strong>
-              <span>{request.description || 'Sin descripción'}</span>
-              {request.scheduledDateTime && (
-                <span>
-                  {new Date(request.scheduledDateTime).toLocaleString('es-CO', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })}
-                </span>
-              )}
-              <div className={styles.candidateFacts}>
-                <span><b>Nombre trabajador:</b> {names[request.workerId] || 'Trabajador'}</span>
-                <span><b>Tarifa:</b> {rate}</span>
-                <span><b>Cercanía:</b> {proximity}</span>
-              </div>
-              <div className={styles.candidateActions}>
-                <button
-                  type="button"
-                  className={styles.chooseBtn}
-                  onClick={() => onAction('acceptConflict', request.id)}
-                >
-                  Elegir esta
-                </button>
-                <button
-                  type="button"
-                  className={styles.cancelBtn}
-                  onClick={() => onAction('cancel', request.id)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </article>
-          );
-        })}
+        {candidates.map((request) => (
+          <article key={request.id} className={styles.candidate}>
+            <strong>{names[request[person.idField]] || person.label}</strong>
+            <span>{request.description || 'Sin descripción'}</span>
+            {request.scheduledDateTime && (
+              <span>
+                {new Date(request.scheduledDateTime).toLocaleString('es-CO', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+            )}
+            <button
+              type="button"
+              className={styles.chooseBtn}
+              onClick={() => onAction('acceptConflict', request.id)}
+            >
+              Elegir esta
+            </button>
+          </article>
+        ))}
       </div>
     </section>
   ));
@@ -108,7 +66,6 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
   const { requests, loading, error, act } = useRequests(role);
   const person = PERSON[role];
   const names = useUserNames(requests.map((request) => request[person.idField]));
-  const { profiles, zones } = useConflictWorkers(requests);
   const conflictRoots = new Set(
     requests.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
   );
@@ -133,8 +90,6 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
           requests={requests}
           names={names}
           person={person}
-          profiles={profiles}
-          zones={zones}
           onAction={act}
           focusRootId={focusRootId}
         />
