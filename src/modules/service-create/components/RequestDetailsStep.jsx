@@ -9,7 +9,6 @@ import {
   availableDates,
   composeAddress,
   describeSchedule,
-  formatAvailableDate,
   formatSlot,
   normalizeDigits,
   normalizeNote,
@@ -18,6 +17,7 @@ import {
   todayISO,
   validateDetails,
 } from '../requestForm';
+import AvailableDatePicker from './AvailableDatePicker';
 import { CalendarIcon, ClockIcon, MapPinIcon } from './icons';
 import PhotoPicker from './PhotoPicker';
 import styles from './RequestDetailsStep.module.css';
@@ -331,27 +331,32 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
           </Field>
 
           <div className={`${styles.row} ${styles.rowEven}`}>
-            <Field
-              id="field-date"
-              label="Fecha"
-              required
-              error={visible.date}
-              icon={<CalendarIcon size={18} />}
-            >
-              {locked.schedule ? (
-                <select
-                  {...fieldProps('field-date', visible.date, { required: true })}
-                  value={values.date}
-                  onChange={(event) => changeDate(event.target.value)}
+            {locked.schedule ? (
+              <div className={styles.datePicker}>
+                <Field
+                  id="field-date"
+                  label="Fecha"
+                  required
+                  error={visible.date}
+                  icon={<CalendarIcon size={18} />}
                 >
-                  <option value="">Selecciona un día disponible</option>
-                  {scheduledDates.map((date) => (
-                    <option key={date} value={date}>
-                      {formatAvailableDate(date)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
+                  <AvailableDatePicker
+                    key={scheduledDates.join('|')}
+                    dates={scheduledDates}
+                    value={values.date}
+                    onChange={changeDate}
+                    {...fieldProps('field-date', visible.date, { required: true })}
+                  />
+                </Field>
+              </div>
+            ) : (
+              <Field
+                id="field-date"
+                label="Fecha"
+                required
+                error={visible.date}
+                icon={<CalendarIcon size={18} />}
+              >
                 <input
                   type="date"
                   min={todayISO()}
@@ -359,8 +364,8 @@ function RequestDetailsStep({ values, onChange, onSubmit, locked = {} }) {
                   value={values.date}
                   onChange={(event) => changeDate(event.target.value)}
                 />
-              )}
-            </Field>
+              </Field>
+            )}
             <Field
               id="field-time"
               label="Hora"

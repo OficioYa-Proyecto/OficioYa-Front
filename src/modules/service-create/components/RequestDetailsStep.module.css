@@ -124,6 +124,14 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.datePicker {
+  min-width: 0;
+}
+
+.datePicker .withIcon > svg {
+  top: 24px;
+}
+
 .error {
   margin: 0;
   font-size: 0.8rem;
