@@ -6,7 +6,7 @@ import StatusMessage from './ui/StatusMessage';
 import Toggle from './ui/Toggle';
 import ui from './ui/ui.module.css';
 import { useAccount } from '../hooks/useAccount';
-import { useZones } from '../hooks/useCatalogs';
+import { useLocalities, useZones } from '../hooks/useCatalogs';
 import { useMyWorker } from '../hooks/useMyWorker';
 import { DAYS, formatMoney, formatDate, dayName, unitName, coveredLocalities } from './formats';
 import PageHeading from './PageHeading';
@@ -18,6 +18,7 @@ const DAY_ORDER = DAYS.map((day) => day.value);
 function DashboardPage() {
   const { data: profile, loading, error, toggleAvailableNow } = useMyWorker();
   const { data: zones } = useZones();
+  const { data: allLocalities } = useLocalities();
   const account = useAccount('/users/me');
   const [actionError, setActionError] = useState('');
   if (!profile) return <ProfileStatus error={error} loading={loading} />;
@@ -25,7 +26,7 @@ function DashboardPage() {
   const paused = profile.status === 'PAUSED';
   const { primaryTrade, secondaryTrades } = profile;
   const firstName = account?.name?.trim().split(/\s+/)[0];
-  const localities = coveredLocalities(profile.zoneIds, zones);
+  const localities = coveredLocalities(profile, zones, allLocalities);
   const today = new Date().toISOString().slice(0, 10);
   const slots = [...profile.slots]
     .filter((slot) => slot.recurrenceType === 'RECURRING' || slot.startDate >= today)

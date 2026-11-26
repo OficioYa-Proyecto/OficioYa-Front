@@ -96,7 +96,7 @@ function CoveragePage() {
           : !loadError && <p className={styles.coverageSummary}>Cargando localidades…</p>}
         <p className={styles.coverageSummary}>
           {coveredZones.size === 0
-            ? 'Aún no cubres ningún barrio.'
+            ? 'Aún no cubres ninguna localidad.'
             : `Cubres ${coveredZones.size} ${coveredZones.size === 1 ? 'barrio' : 'barrios'} en total.`}
         </p>
       </section>

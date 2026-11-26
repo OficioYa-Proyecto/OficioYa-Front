@@ -63,15 +63,21 @@ export function initialCoverage(saved, groups) {
   return { localityIds: [...localityIds], zoneIds: [...zoneIds] };
 }
 
-// Localidades que cubre el trabajador, a partir de los ids de barrio que guarda Worker.
-// Devuelve null mientras no se hayan cargado las zonas.
-export function coveredLocalities(zoneIds, zones) {
-  if (!zones) return null;
-  const names = zoneIds
-    .map((id) => zones.find((zone) => zone.id === id))
-    .filter(Boolean)
-    .map((zone) => zone.locality || 'Otras');
-  return [...new Set(names)].sort((a, b) => a.localeCompare(b, 'es'));
+// Nombres de las localidades que cubre el trabajador: las guardadas (localityIds) y las de sus barrios (zoneIds).
+// Un barrio sin localidad conocida cuenta como "Otras". Devuelve null mientras cargan los catálogos.
+export function coveredLocalities(profile, zones, localities) {
+  if (!zones || !localities) return null;
+  const canonical = new Map(localities.map((locality) => [normalizeName(locality.name), locality.name]));
+  const names = new Set();
+  (profile.localityIds ?? []).forEach((id) => {
+    const locality = localities.find((item) => item.id === id);
+    if (locality) names.add(locality.name);
+  });
+  profile.zoneIds.forEach((id) => {
+    const zone = zones.find((item) => item.id === id);
+    if (zone) names.add(canonical.get(normalizeName(zone.locality)) ?? 'Otras');
+  });
+  return [...names].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
 export function formatMoney(input) {

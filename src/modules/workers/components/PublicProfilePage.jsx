@@ -4,7 +4,7 @@ import EmptyState from './ui/EmptyState';
 import Icon from './ui/Icon';
 import StatusMessage from './ui/StatusMessage';
 import ui from './ui/ui.module.css';
-import { useZones } from '../hooks/useCatalogs';
+import { useLocalities, useZones } from '../hooks/useCatalogs';
 import { useWorker } from '../hooks/useWorker';
 import { getSession } from '../../core/lib/session';
 import { formatMoney, formatDate, unitName, coveredLocalities } from './formats';
@@ -19,6 +19,7 @@ function PublicProfilePage() {
   const { id } = useParams();
   const { data: profile, loading, error, notFound } = useWorker(id);
   const { data: zones } = useZones();
+  const { data: allLocalities } = useLocalities();
   const account = useAccount(profile ? `/users/${profile.userId}` : null);
   const photoUrl = useProfilePhoto(profile?.userId);
 
@@ -36,7 +37,7 @@ function PublicProfilePage() {
 
   const isOwn = profile.userId === getSession()?.userId;
   const trades = [profile.primaryTrade, ...profile.secondaryTrades];
-  const localities = coveredLocalities(profile.zoneIds, zones);
+  const localities = coveredLocalities(profile, zones, allLocalities);
   const { primaryTrade } = profile;
 
   return (
