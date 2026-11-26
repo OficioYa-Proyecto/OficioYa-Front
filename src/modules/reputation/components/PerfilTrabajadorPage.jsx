@@ -9,6 +9,7 @@ import { decimal, fecha } from '../formatos';
 import { useAutores } from '../hooks/useAutores';
 import { useCuentaTrabajador } from '../hooks/useCuentaTrabajador';
 import { useFotoPerfil } from '../hooks/useFotoPerfil';
+import { useResenasDeContratante } from '../hooks/useResenasDeContratante';
 import { usePerfilTrabajador } from '../hooks/usePerfilTrabajador';
 import Avatar from './Avatar';
 import AutorResena from './AutorResena';
@@ -20,6 +21,41 @@ import styles from './PerfilTrabajadorPage.module.css';
 const RESENAS_VISIBLES = 10;
 const PERFIL_DESCONOCIDO = { nombre: 'Profesional', oficio: '' };
 
+/** Reseñas que los trabajadores le escribieron a esta persona cuando ella contrató un servicio. */
+function ResenasComoContratante({ esContratante, estado, nombres, puedeReportar, alReportar }) {
+  if (esContratante === false) {
+    return <p>Este usuario no se encuentra registrado como Contratante en OficioYa.</p>;
+  }
+  if (estado.cargando) {
+    return <p className={styles.nota}>Cargando reseñas…</p>;
+  }
+  if (estado.error) {
+    return <ErrorMessage error={estado.error} />;
+  }
+  return (
+    <>
+      {estado.resenas.length === 0 && <p>Aún no tiene reseñas como contratante.</p>}
+      {estado.resenas.slice(0, RESENAS_VISIBLES).map((resena) => (
+        <article key={resena.codigo} className={`card ${styles.resena}`}>
+          <div className={styles.autor}>
+            <AutorResena autorId={resena.autorId} nombre={nombres[resena.autorId]} sinNombre="Trabajador">
+              <small>Trabajador · {fecha(resena.fechaCreacion)}</small>
+            </AutorResena>
+            {puedeReportar && (
+              <Button variant="secondary" onClick={() => alReportar(resena)}>
+                Reportar
+              </Button>
+            )}
+          </div>
+          <Estrellas valor={resena.puntuacion} tamano={16} />
+          {resena.comentario && <p>{resena.comentario}</p>}
+        </article>
+      ))}
+      <small className={styles.nota}>Reseñas de trabajadores que le prestaron un servicio a esta persona.</small>
+    </>
+  );
+}
+
 function PerfilTrabajadorPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -30,6 +66,16 @@ function PerfilTrabajadorPage() {
   const idReputacion = cuenta?.trabajadorId === id ? (cuenta.userId ?? id) : null;
   const { cargando, error, reputacion, resenas, reintentar } = usePerfilTrabajador(idReputacion, token);
   const autores = useAutores(resenas, token);
+  // Pestañas: lo que le dicen a esta persona como trabajador y lo que le dicen como contratante.
+  const [pestana, setPestana] = useState('COMO_TRABAJADOR');
+  // null: Users no respondió y no se sabe si es contratante.
+  const esContratante = Array.isArray(cuenta?.roles) ? cuenta.roles.includes('CONTRATANTE') : null;
+  const comoContratante = useResenasDeContratante(
+    idReputacion,
+    token,
+    pestana === 'COMO_CONTRATANTE' && esContratante !== false,
+  );
+  const autoresComoContratante = useAutores(comoContratante.resenas, token);
   const [enReporte, setEnReporte] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const foto = useFotoPerfil(cuenta?.userId);
@@ -105,25 +151,68 @@ function PerfilTrabajadorPage() {
           <span className="eyebrow">Reseñas</span>
           <h2>Reseñas recientes</h2>
         </div>
+        <div className={styles.pestanas} role="tablist" aria-label="Tipo de reseñas">
+          <button
+            type="button"
+            role="tab"
+            id="pestana-como-trabajador"
+            aria-selected={pestana === 'COMO_TRABAJADOR'}
+            aria-controls="panel-resenas"
+            className={pestana === 'COMO_TRABAJADOR' ? styles.pestanaActiva : styles.pestana}
+            onClick={() => setPestana('COMO_TRABAJADOR')}
+          >
+            Reseñas como trabajador
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="pestana-como-contratante"
+            aria-selected={pestana === 'COMO_CONTRATANTE'}
+            aria-controls="panel-resenas"
+            className={pestana === 'COMO_CONTRATANTE' ? styles.pestanaActiva : styles.pestana}
+            onClick={() => setPestana('COMO_CONTRATANTE')}
+          >
+            Reseñas como contratante
+          </button>
+        </div>
         {mensaje && <p role="status" className={styles.mensaje}>{mensaje}</p>}
-        {resenas.length === 0 && <p>Este profesional aún no tiene reseñas.</p>}
-        {resenas.slice(0, RESENAS_VISIBLES).map((resena) => (
-          <article key={resena.codigo} className={`card ${styles.resena}`}>
-            <div className={styles.autor}>
-              <AutorResena autorId={resena.autorId} nombre={autores[resena.autorId]}>
-                <small>{fecha(resena.fechaCreacion)}</small>
-              </AutorResena>
-              {puedeReportar && (
-                <Button variant="secondary" onClick={() => setEnReporte(resena)}>
-                  Reportar
-                </Button>
-              )}
-            </div>
-            <Estrellas valor={resena.puntuacion} tamano={16} />
-            {resena.comentario && <p>{resena.comentario}</p>}
-          </article>
-        ))}
-        <small className={styles.nota}>Reseñas de clientes con un servicio finalizado.</small>
+        <div
+          id="panel-resenas"
+          role="tabpanel"
+          aria-labelledby={pestana === 'COMO_TRABAJADOR' ? 'pestana-como-trabajador' : 'pestana-como-contratante'}
+          className={styles.panelResenas}
+        >
+          {pestana === 'COMO_CONTRATANTE' ? (
+            <ResenasComoContratante
+              esContratante={esContratante}
+              estado={comoContratante}
+              nombres={autoresComoContratante}
+              puedeReportar={puedeReportar}
+              alReportar={setEnReporte}
+            />
+          ) : (
+            <>
+              {resenas.length === 0 && <p>Este profesional aún no tiene reseñas.</p>}
+              {resenas.slice(0, RESENAS_VISIBLES).map((resena) => (
+                <article key={resena.codigo} className={`card ${styles.resena}`}>
+                  <div className={styles.autor}>
+                    <AutorResena autorId={resena.autorId} nombre={autores[resena.autorId]}>
+                      <small>{fecha(resena.fechaCreacion)}</small>
+                    </AutorResena>
+                    {puedeReportar && (
+                      <Button variant="secondary" onClick={() => setEnReporte(resena)}>
+                        Reportar
+                      </Button>
+                    )}
+                  </div>
+                  <Estrellas valor={resena.puntuacion} tamano={16} />
+                  {resena.comentario && <p>{resena.comentario}</p>}
+                </article>
+              ))}
+              <small className={styles.nota}>Reseñas de clientes con un servicio finalizado.</small>
+            </>
+          )}
+        </div>
       </div>
 
       {enReporte && (
