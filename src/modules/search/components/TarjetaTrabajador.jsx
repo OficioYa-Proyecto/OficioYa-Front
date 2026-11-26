@@ -1,8 +1,10 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Avatar from '../../reputation/components/Avatar';
 import Estrellas from '../../reputation/components/Estrellas';
 import { useFotoPerfil } from '../../reputation/hooks/useFotoPerfil';
 import { decimal } from '../../reputation/formatos';
+import { useVisible } from '../hooks/useVisible';
 import styles from './TarjetaTrabajador.module.css';
 
 // Worker todavía no entrega el nombre (vive en Users); mientras tanto se muestra un texto genérico.
@@ -11,8 +13,10 @@ const NOMBRE_PENDIENTE = 'Profesional';
 function TarjetaTrabajador({ trabajador }) {
   const nombre = trabajador.nombreCompleto?.trim() || NOMBRE_PENDIENTE;
   const calificacion = trabajador.calificacionPromedio ?? 0;
-  // Search entrega la cuenta en Users; con ella se pide la foto a Imágenes.
-  const foto = useFotoPerfil(trabajador.usuarioId) ?? trabajador.fotoPerfilUrl;
+  // Search entrega la cuenta en Users; con ella se pide la foto a Imágenes, solo cuando la tarjeta se ve.
+  const tarjeta = useRef(null);
+  const visible = useVisible(tarjeta);
+  const foto = useFotoPerfil(trabajador.usuarioId, visible) ?? trabajador.fotoPerfilUrl;
   const detalles = [
     trabajador.zona,
     trabajador.tarifaAproximada == null
@@ -22,7 +26,7 @@ function TarjetaTrabajador({ trabajador }) {
   ].filter(Boolean);
 
   return (
-    <article className={`card ${styles.tarjeta}`}>
+    <article ref={tarjeta} className={`card ${styles.tarjeta}`}>
       <div className={styles.persona}>
         <Avatar key={foto ?? 'sin-foto'} nombre={trabajador.nombreCompleto} foto={foto} />
         <div>

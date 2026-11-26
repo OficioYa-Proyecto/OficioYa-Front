@@ -12,14 +12,22 @@ function iniciales(nombre) {
 
 function Avatar({ nombre, foto, tamano = 52 }) {
   const [fotoFallida, setFotoFallida] = useState(false);
+  const [fotoLista, setFotoLista] = useState(false);
   const medidas = { width: tamano, height: tamano, fontSize: tamano * 0.34 };
 
+  // Las iniciales se ven hasta que la foto termina de descargar; así el cuadro nunca queda vacío.
   return (
     <span className={styles.avatar} style={medidas}>
-      {foto && !fotoFallida ? (
-        <img src={foto} alt="" onError={() => setFotoFallida(true)} />
-      ) : (
-        iniciales(nombre)
+      {!fotoLista && iniciales(nombre)}
+      {foto && !fotoFallida && (
+        <img
+          src={foto}
+          alt=""
+          decoding="async"
+          className={fotoLista ? undefined : styles.cargando}
+          onLoad={() => setFotoLista(true)}
+          onError={() => setFotoFallida(true)}
+        />
       )}
     </span>
   );
