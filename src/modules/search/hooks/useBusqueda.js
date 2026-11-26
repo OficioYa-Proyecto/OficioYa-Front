@@ -8,12 +8,11 @@ const FILTROS_INICIALES = {
   diaSemana: '',
   franjaHoraria: '',
   soloDisponibleAhora: false,
-  orden: 'MAYOR_A_MENOR',
+  orden: 'PERFIL_COMPLETO',
 };
 
 export function useBusqueda(token) {
   const [oficios, setOficios] = useState([]);
-  const [oficiosCargados, setOficiosCargados] = useState(false);
   const [zonas, setZonas] = useState([]);
   const [errorOficios, setErrorOficios] = useState(null);
   const [oficioElegido, setOficioElegido] = useState(null);
@@ -22,19 +21,16 @@ export function useBusqueda(token) {
   const [intento, setIntento] = useState(0);
   const [respuesta, setRespuesta] = useState(null);
 
-  // Sin elegir nada se muestra el primer oficio, como en el mockup.
-  const oficioId = oficioElegido ?? oficios[0]?.id ?? null;
+  // Sin elegir oficio ni escribir nada se muestran todos los trabajadores.
+  const oficioId = oficioElegido;
   const clave = JSON.stringify({ oficioId, texto, filtros, intento });
-  // Sin oficios en el catálogo no hay nada que buscar: no se queda "cargando" para siempre.
-  const sinCatalogo = oficiosCargados && oficioId === null && texto === null;
-  const cargando = !sinCatalogo && respuesta?.clave !== clave;
+  const cargando = respuesta?.clave !== clave;
 
   useEffect(() => {
     searchService
       .listarOficios(token)
       .then((lista) => setOficios(Array.isArray(lista) ? lista : []))
-      .catch((error) => setErrorOficios(error.message))
-      .finally(() => setOficiosCargados(true));
+      .catch((error) => setErrorOficios(error.message));
     // Si las zonas no cargan, la búsqueda sigue funcionando; solo queda "Todas las zonas".
     searchService
       .listarZonas(token)
@@ -43,13 +39,15 @@ export function useBusqueda(token) {
   }, [token]);
 
   useEffect(() => {
-    if (oficioId === null && texto === null) {
-      return undefined;
-    }
     let vigente = true;
-    const peticion = texto !== null
-      ? searchService.buscarPorTexto(texto, filtros, token)
-      : searchService.buscarPorOficio(oficioId, filtros, token);
+    let peticion;
+    if (texto !== null) {
+      peticion = searchService.buscarPorTexto(texto, filtros, token);
+    } else if (oficioId !== null) {
+      peticion = searchService.buscarPorOficio(oficioId, filtros, token);
+    } else {
+      peticion = searchService.buscarTodos(filtros, token);
+    }
     peticion
       .then((resultado) => vigente && setRespuesta({ clave, resultado }))
       .catch((error) => vigente && setRespuesta({ clave, error: error.message }));
@@ -64,10 +62,11 @@ export function useBusqueda(token) {
     oficioId,
     texto,
     filtros,
-    cargando: cargando && !errorOficios,
-    sinCatalogo,
-    resultado: cargando || sinCatalogo ? null : respuesta?.resultado,
-    error: errorOficios ?? (cargando || sinCatalogo ? null : respuesta?.error),
+    cargando,
+    // Si el catálogo de oficios no carga, el listado sigue funcionando; solo no hay categorías para elegir.
+    errorOficios,
+    resultado: cargando ? null : respuesta?.resultado,
+    error: cargando ? null : respuesta?.error,
     elegirOficio(id) {
       setTexto(null);
       setOficioElegido(id);

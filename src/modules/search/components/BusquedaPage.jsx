@@ -101,7 +101,7 @@ function Resultados({ busqueda, propsFiltros }) {
 }
 
 function ListaResultados({ busqueda }) {
-  const { cargando, error, oficioId, oficios, reintentar, resultado, sinCatalogo, texto } = busqueda;
+  const { cargando, error, errorOficios, oficioId, oficios, reintentar, resultado, texto } = busqueda;
 
   if (error) {
     return (
@@ -116,8 +116,8 @@ function ListaResultados({ busqueda }) {
   if (cargando) {
     return <p className={styles.estado}>Buscando profesionales…</p>;
   }
-  if (sinCatalogo || !resultado) {
-    return <p className={styles.estado}>Aún no hay oficios disponibles para buscar.</p>;
+  if (!resultado) {
+    return null;
   }
   if (resultado.estado === 'REQUIERE_MAS_DETALLE' || resultado.estado === 'ERROR') {
     return <p className={styles.estado}>{resultado.mensaje}</p>;
@@ -126,7 +126,9 @@ function ListaResultados({ busqueda }) {
   const oficio = oficios.find((item) => item.id === oficioId)?.nombre;
   // Si el texto coincidió con el nombre de un trabajador, Search responde tipo NOMBRE.
   let titulo = `Sugerencias de ${resultado.oficioIdentificado}`;
-  if (texto === null) {
+  if (texto === null && oficioId === null) {
+    titulo = 'Todos los profesionales';
+  } else if (texto === null) {
     titulo = `Profesionales de ${oficio}`;
   } else if (resultado.tipo === 'NOMBRE') {
     titulo = `Profesionales con el nombre “${texto}”`;
@@ -134,6 +136,7 @@ function ListaResultados({ busqueda }) {
 
   return (
     <>
+      {errorOficios && <ErrorMessage error={`No pudimos cargar los oficios: ${errorOficios}`} />}
       <div className={styles.resumen}>
         <h2>{titulo}</h2>
         <span>{resultado.total} {resultado.total === 1 ? 'resultado' : 'resultados'}</span>
