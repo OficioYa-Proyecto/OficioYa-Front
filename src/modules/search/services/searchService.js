@@ -18,6 +18,12 @@ export function listarOficios(token) {
   return request(`${BASE}/oficios`, { token });
 }
 
+/** Todos los trabajadores activos, sin elegir oficio. */
+export function buscarTodos(filtros, token) {
+  const consulta = new URLSearchParams(criterios(filtros));
+  return request(`${BASE}/trabajadores?${consulta}`, { token });
+}
+
 export function buscarPorOficio(oficioId, filtros, token) {
   const consulta = new URLSearchParams(criterios(filtros));
   return request(`${BASE}/oficios/${oficioId}/trabajadores?${consulta}`, { token });
