@@ -55,7 +55,8 @@ function horario(franjas) {
 
 /** Barrios del trabajador agrupados por localidad, en orden alfabético. */
 function useLocalidades(zonaIds, token) {
-  const [zonas, setZonas] = useState([]);
+  // null mientras llegan los barrios, para no decir "Aún no indica sus barrios" antes de tiempo.
+  const [zonas, setZonas] = useState(null);
 
   useEffect(() => {
     let vigente = true;
@@ -68,6 +69,9 @@ function useLocalidades(zonaIds, token) {
     };
   }, [token]);
 
+  if (zonas === null) {
+    return null;
+  }
   const grupos = new Map();
   zonas
     .filter((zona) => zonaIds.includes(zona.id))
@@ -119,9 +123,9 @@ export function DetallesTrabajador({ cuenta, token }) {
       )}
 
       <Seccion titulo="Dónde trabaja">
-        {localidades.length === 0 ? (
-          <p className={styles.vacio}>Aún no indica sus barrios.</p>
-        ) : (
+        {localidades === null && <p className={styles.vacio}>Cargando barrios…</p>}
+        {localidades?.length === 0 && <p className={styles.vacio}>Aún no indica sus barrios.</p>}
+        {localidades?.length > 0 && (
           <ul className={styles.localidades}>
             {localidades.map((grupo) => (
               <li key={grupo.localidad}>

@@ -3,8 +3,26 @@ import * as reputationService from '../services/reputationService';
 
 // Cuenta del trabajador: el userId (lo necesita Nueva solicitud), su nombre y su oficio principal.
 // Si Worker o Users no responden, el perfil se muestra igual, sin el botón Contratar.
+/**
+ * Perfil de Worker a partir del id de la ruta. Search enlaza con el id del perfil, pero Mis servicios enlaza con
+ * la cuenta del trabajador (el id que guarda Service). Worker no busca por cuenta, así que en ese caso se busca en
+ * la lista de trabajadores el que tiene esa cuenta.
+ */
+async function perfilDeWorker(id, token) {
+  try {
+    return await reputationService.obtenerPerfilWorker(id, token);
+  } catch (error) {
+    const trabajadores = await reputationService.listarTrabajadores(token).catch(() => []);
+    const conEsaCuenta = (Array.isArray(trabajadores) ? trabajadores : []).find((t) => t?.userId === id);
+    if (conEsaCuenta) {
+      return conEsaCuenta;
+    }
+    throw error;
+  }
+}
+
 async function cargarCuenta(trabajadorId, token) {
-  const perfil = await reputationService.obtenerPerfilWorker(trabajadorId, token);
+  const perfil = await perfilDeWorker(trabajadorId, token);
   const userId = perfil?.userId ?? null;
   const oficio = perfil?.primaryTrade?.trade?.name ?? '';
   // Oficios que ofrece (principal primero) y barrios donde trabaja: Nueva solicitud los usa para preseleccionar.
