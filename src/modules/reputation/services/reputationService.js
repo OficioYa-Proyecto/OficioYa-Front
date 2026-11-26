@@ -15,6 +15,11 @@ export function obtenerPerfilWorker(trabajadorId, token) {
   return request(`/workers/${trabajadorId}`, { token });
 }
 
+/** Barrios habilitados en OficioYa (por el Orchestrator): [{ id, name, locality }]. */
+export function listarZonas(token) {
+  return request('/zones', { token });
+}
+
 /** Datos públicos de cuentas en Users (nombre), por el Orchestrator. */
 export function obtenerUsuarios(userIds, token) {
   const consulta = userIds.map((id) => `ids=${encodeURIComponent(id)}`).join('&');
