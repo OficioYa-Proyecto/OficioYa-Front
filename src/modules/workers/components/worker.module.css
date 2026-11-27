@@ -664,11 +664,6 @@
   gap: 7px;
 }
 
-.previewBar a {
-  color: var(--color-accent);
-  font-weight: 700;
-}
-
 .zoneChips span {
   align-items: center;
   background: #eaf3ee;

@@ -1,7 +1,8 @@
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { resolveGalleryImageUrl } from '../services/imagesClient';
 import EmptyState from './ui/EmptyState';
 import Icon from './ui/Icon';
+import Button from '../../core/design-system/Button';
 import StatusMessage from './ui/StatusMessage';
 import ui from './ui/ui.module.css';
 import { useLocalities, useZones } from '../hooks/useCatalogs';
@@ -22,6 +23,7 @@ function PublicProfilePage() {
   const { data: allLocalities } = useLocalities();
   const account = useAccount(profile ? `/users/${profile.userId}` : null);
   const photoUrl = useProfilePhoto(profile?.userId);
+  const navigate = useNavigate();
 
   if (loading) return <div className={styles.publicPage}><EmptyState title="Cargando…" text="Estamos consultando el perfil." /></div>;
   if (notFound || profile?.status === 'PAUSED') {
@@ -45,7 +47,9 @@ function PublicProfilePage() {
       {isOwn && (
         <div className={styles.previewBar}>
           <span><Icon name="eye" size={16} /> Así ven tu perfil los contratantes.</span>
-          <Link to="/worker/profile">Volver a mi perfil</Link>
+          <Button type="button" variant="secondary" onClick={() => navigate('/worker/profile')}>
+            Volver a mi perfil
+          </Button>
         </div>
       )}
       <section className={`${ui.infoCard} ${styles.publicHero}`}>
