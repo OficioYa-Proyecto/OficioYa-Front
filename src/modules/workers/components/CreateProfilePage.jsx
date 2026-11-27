@@ -5,23 +5,25 @@ import SelectField from './ui/SelectField';
 import StatusMessage from './ui/StatusMessage';
 import Toggle from './ui/Toggle';
 import ui from './ui/ui.module.css';
-import { useTrades, useZones } from '../hooks/useCatalogs';
+import { useLocalities, useTrades, useZones } from '../hooks/useCatalogs';
 import { useMyWorker } from '../hooks/useMyWorker';
 import { createWorker } from '../services/workersService';
 import { validateRate } from './formats';
 import PageHeading from './PageHeading';
 import RateFields from './RateFields';
-import ZonePicker from './ZonePicker';
+import LocalityPicker from './LocalityPicker';
 import styles from './worker.module.css';
 
-function validar({ tradeId, rate, unit, zoneIds }) {
+function validar({ tradeId, rate, unit, coverage }) {
   const errors = {};
   if (!tradeId) errors.tradeId = 'Selecciona tu oficio principal';
   const rateInput = validateRate(rate);
   if (rateInput) errors.rate = rateInput;
   if (!unit) errors.unit = 'Selecciona la unidad';
-  // RF-06: el área de cobertura necesita al menos una zona.
-  if (zoneIds.length === 0) errors.zoneIds = 'Selecciona al menos un barrio';
+  // RF-06: el área de cobertura necesita al menos una localidad.
+  if (coverage.localityIds.length === 0 && coverage.zoneIds.length === 0) {
+    errors.zoneIds = 'Selecciona al menos una localidad';
+  }
   return errors;
 }
 
@@ -30,10 +32,11 @@ function CreateProfilePage() {
   const { data: profile, loading, refresh } = useMyWorker();
   const { data: activeTrades } = useTrades();
   const { data: zones } = useZones();
+  const { data: localities } = useLocalities();
   const [tradeId, setTradeId] = useState('');
   const [rate, setRate] = useState('');
   const [unit, setUnit] = useState('PER_JOB');
-  const [zoneIds, setZoneIds] = useState([]);
+  const [coverage, setCoverage] = useState({ localityIds: [], zoneIds: [] });
   const [availableNow, setAvailableNow] = useState(true);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -46,7 +49,7 @@ function CreateProfilePage() {
 
   const submit = async (event) => {
     event.preventDefault();
-    const foundErrors = validar({ tradeId, rate, unit, zoneIds });
+    const foundErrors = validar({ tradeId, rate, unit, coverage });
     setErrors(foundErrors);
     if (Object.keys(foundErrors).length) return;
     setSaving(true);
@@ -54,7 +57,8 @@ function CreateProfilePage() {
     try {
       await createWorker({
         availableNow,
-        zoneIds,
+        zoneIds: coverage.zoneIds,
+        localityIds: coverage.localityIds,
         primaryTrade: { tradeId, approxRate: Number(rate), rateUnit: unit },
       });
       await refresh();
@@ -105,12 +109,17 @@ function CreateProfilePage() {
             unitError={errors.unit}
           />
           <div className={styles.span2}>
-            <ZonePicker
-              error={errors.zoneIds}
-              onChange={(ids) => { setZoneIds(ids); clearError('zoneIds'); }}
-              selected={zoneIds}
-              zones={zones ?? []}
-            />
+            {zones && localities ? (
+              <LocalityPicker
+                error={errors.zoneIds}
+                localities={localities}
+                onChange={(next) => { setCoverage(next); clearError('zoneIds'); }}
+                value={coverage}
+                zones={zones}
+              />
+            ) : (
+              <p className={styles.coverageSummary}>Cargando localidades…</p>
+            )}
           </div>
         </div>
         <div className={styles.formFooter}>
