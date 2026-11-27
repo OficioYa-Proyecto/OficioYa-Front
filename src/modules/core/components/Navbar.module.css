@@ -283,6 +283,7 @@
 .drawerLink {
   display: flex;
   align-items: center;
+  gap: 12px;
   padding: 12px 14px;
   border-radius: 12px;
   text-decoration: none;
@@ -304,6 +305,7 @@
 }
 
 .drawerFooter {
+  position: relative;
   padding: 16px 20px;
   border-top: 1px solid #ece4d8;
   background: #faf7f2;
@@ -313,6 +315,63 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.drawerUserBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.drawerUserBtn .accountName,
+.drawerUserBtn .accountSub {
+  display: block;
+}
+
+.drawerChevron {
+  margin-left: auto;
+  color: #55625e;
+  transition: transform 0.15s ease;
+}
+
+.drawerUserMenu {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 14px;
+  right: 14px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid #e6ddd1;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.drawerLogout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #dc2626;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.drawerLogout:hover {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 @media (max-width: 1024px) {
