@@ -32,6 +32,7 @@ function Field({
           min={min}
           placeholder={placeholder}
           step={step}
+          onWheel={type === 'number' ? (event) => event.currentTarget.blur() : undefined}
           type={type}
         />
         {type === 'password' && <Icon name="eye" size={18} />}

@@ -149,7 +149,12 @@ function ListaResultados({ busqueda }) {
     return null;
   }
   if (resultado.estado === 'REQUIERE_MAS_DETALLE' || resultado.estado === 'ERROR') {
-    return <p className={styles.estado}>{resultado.mensaje}</p>;
+    return (
+      <p className={styles.estado}>
+        No encontramos profesionales para “{texto}”. Prueba con el nombre de un oficio o de un trabajador, o
+        elige una categoría.
+      </p>
+    );
   }
 
   const oficio = oficios.find((item) => item.id === oficioId)?.nombre;

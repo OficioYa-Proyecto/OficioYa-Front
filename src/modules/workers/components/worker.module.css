@@ -100,7 +100,6 @@
 }
 
 .cardHeader h2,
-.selectedTitle,
 .formTitle h2,
 .galleryIntro h2,
 .sectionTitle h2,
@@ -169,31 +168,10 @@
   grid-column: 1 / -1;
 }
 
-.zonePicker,
-.tags,
 .zoneChips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.zonePicker button {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 99px;
-  color: var(--color-text-muted);
-  display: flex;
-  font-size: 12px;
-  gap: 4px;
-  padding: 7px 11px;
-}
-
-.zonePicker button.zoneSelected {
-  background: #eaf3ee;
-  border-color: #a9c8b8;
-  color: var(--color-sage-dark);
-  font-weight: 700;
 }
 
 .formFooter {
@@ -264,14 +242,9 @@
 }
 
 /* Cobertura */
-.coverageLayout,
 .availabilityLayout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-}
-
-.coverageLayout {
-  gap: 30px;
 }
 
 .availabilityLayout {
@@ -279,89 +252,63 @@
   gap: 20px;
 }
 
-.selectedTitle {
-  margin-bottom: 18px;
+.localityGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
 }
 
-.tags button {
-  align-items: center;
-  background: var(--color-primary-soft);
-  border: 0;
-  border-radius: 99px;
-  color: var(--color-accent);
-  display: inline-flex;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 7px;
-  padding: 8px 11px;
-}
-
-.zoneList {
+.localityCard {
+  align-items: flex-start;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 13px;
-  max-height: 390px;
-  overflow: auto;
-}
-
-.searchBox {
-  align-items: center;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-muted);
+  cursor: pointer;
   display: flex;
-  gap: 8px;
-  padding: 10px 13px;
-  position: sticky;
-  top: 0;
-}
-
-.searchBox input {
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  min-width: 0;
-  outline: 0;
-  padding: 0;
-}
-
-.zoneRow {
-  align-items: center;
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  font-size: 13px;
   font-weight: 400;
-  justify-content: space-between;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 14px 16px;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.zoneRow:last-child {
-  border-bottom: 0;
-}
-
-.zoneRow input {
+.localityCard input {
   accent-color: var(--color-primary);
   flex: 0 0 auto;
   height: 16px;
+  margin-top: 2px;
   padding: 0;
   width: 16px;
 }
 
-.adminNote {
-  align-items: flex-start;
-  background: var(--color-surface-alt);
-  border-radius: 10px;
-  color: var(--color-text-muted);
-  display: flex;
-  font-size: 12px;
-  gap: 8px;
-  line-height: 1.45;
-  margin: 22px 0 0;
-  padding: 11px 12px;
+.localityCard span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
-.adminNote svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
+.localityCard strong {
+  font-size: 14px;
+}
+
+.localityCard small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.localityActive {
+  background: #eaf3ee;
+  border-color: #a9c8b8;
+}
+
+.localityActive small {
+  color: var(--color-sage-dark);
+}
+
+.coverageSummary {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 18px 0 0;
 }
 
 /* Disponibilidad */
@@ -717,11 +664,6 @@
   gap: 7px;
 }
 
-.previewBar a {
-  color: var(--color-accent);
-  font-weight: 700;
-}
-
 .zoneChips span {
   align-items: center;
   background: #eaf3ee;
@@ -1002,7 +944,6 @@
 
 @media (max-width: 900px) {
   .availabilityLayout,
-  .coverageLayout,
   .galleryForm {
     grid-template-columns: 1fr;
   }

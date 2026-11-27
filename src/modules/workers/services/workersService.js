@@ -32,6 +32,16 @@ const realApi = {
   // ---- Zonas ----
   addZone: (workerId, zoneId) => call(`/workers/${workerId}/zones/${zoneId}`, { method: 'PUT' }),
   removeZone: (workerId, zoneId) => call(`/workers/${workerId}/zones/${zoneId}`, { method: 'DELETE' }),
+  addLocality: (workerId, localityId) => call(`/workers/${workerId}/localities/${localityId}`, { method: 'PUT' }),
+  removeLocality: (workerId, localityId) => call(`/workers/${workerId}/localities/${localityId}`, { method: 'DELETE' }),
+  // Cobertura realmente guardada (sin los barrios que llegan por una localidad)
+  async getSavedCoverage(workerId) {
+    const [zones, localities] = await Promise.all([
+      call(`/workers/${workerId}/zones`),
+      call(`/workers/${workerId}/localities`),
+    ]);
+    return { zoneIds: zones.zoneIds ?? [], localityIds: localities.localityIds ?? [] };
+  },
 
   // ---- Oficios del trabajador ----
   // datos = { tradeId, approxRate, rateUnit }
@@ -79,6 +89,7 @@ const realApi = {
   
   // Las zonas son del dominio User.
   listZones: () => call('/zones'),
+  listLocalities: () => call('/localities'),
 };
 
 export const {
@@ -102,4 +113,8 @@ export const {
   deleteGalleryPhoto,
   listTrades,
   listZones,
+  addLocality,
+  removeLocality,
+  listLocalities,
+  getSavedCoverage,
 } = realApi;

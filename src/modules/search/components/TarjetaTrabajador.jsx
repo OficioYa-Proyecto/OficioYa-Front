@@ -22,7 +22,9 @@ function TarjetaTrabajador({ trabajador }) {
     trabajador.tarifaAproximada == null
       ? 'Tarifa por acordar'
       : `$${Number(trabajador.tarifaAproximada).toLocaleString('es-CO')}`,
-    `${trabajador.trabajosCompletados ?? 0} trabajos completados`,
+    (trabajador.trabajosCompletados ?? 0) === 1
+      ? '1 trabajo completado'
+      : `${trabajador.trabajosCompletados ?? 0} trabajos completados`,
   ].filter(Boolean);
 
   return (
