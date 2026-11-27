@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
+import { dinero, unidad } from '../formatos';
 import * as reputationService from '../services/reputationService';
 import styles from './DetallesTrabajador.module.css';
 
 const DIAS = {
-  MONDAY: 'Lunes',
-  TUESDAY: 'Martes',
-  WEDNESDAY: 'Miércoles',
-  THURSDAY: 'Jueves',
-  FRIDAY: 'Viernes',
-  SATURDAY: 'Sábado',
-  SUNDAY: 'Domingo',
+  MONDAY: 'lunes',
+  TUESDAY: 'martes',
+  WEDNESDAY: 'miércoles',
+  THURSDAY: 'jueves',
+  FRIDAY: 'viernes',
+  SATURDAY: 'sábados',
+  SUNDAY: 'domingos',
 };
 const ORDEN_DIAS = Object.keys(DIAS);
-const UNIDADES = { PER_HOUR: 'por hora', PER_DAY: 'por día', PER_JOB: 'por trabajo' };
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 
@@ -21,10 +21,6 @@ const API_ORIGIN = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '
 function urlImagen(url) {
   const id = typeof url === 'string' ? url.match(/\/api\/v1\/images\/([0-9a-f-]{36})(?:[/?#]|$)/i)?.[1] : null;
   return id ? `${API_ORIGIN}/api/v1/images/${id}` : url;
-}
-
-function dinero(valor) {
-  return `$${Number(valor).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`;
 }
 
 function hoyISO() {
@@ -36,7 +32,7 @@ function hoyISO() {
 function fechaCorta(valor) {
   // Las fechas de Worker vienen como "AAAA-MM-DD"; se leen en hora local para no correr el día.
   const [anio, mes, dia] = valor.split('-').map(Number);
-  return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+  return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 /** Franjas semanales primero (por día), luego las fechas puntuales que aún no pasaron. */
@@ -45,11 +41,11 @@ function horario(franjas) {
   const semanales = franjas
     .filter((f) => f.tipo === 'RECURRING' && f.dia && (!f.hasta || f.hasta >= hoy))
     .sort((a, b) => ORDEN_DIAS.indexOf(a.dia) - ORDEN_DIAS.indexOf(b.dia) || a.inicio.localeCompare(b.inicio))
-    .map((f) => ({ cuando: DIAS[f.dia], horas: `${f.inicio} – ${f.fin}` }));
+    .map((f) => ({ tipo: 'Cada semana', cuando: `Todos los ${DIAS[f.dia]}`, horas: `${f.inicio} – ${f.fin}` }));
   const fijas = franjas
     .filter((f) => f.tipo === 'FIXED' && f.desde && f.desde >= hoy)
     .sort((a, b) => a.desde.localeCompare(b.desde) || a.inicio.localeCompare(b.inicio))
-    .map((f) => ({ cuando: fechaCorta(f.desde), horas: `${f.inicio} – ${f.fin}` }));
+    .map((f) => ({ tipo: 'Una fecha', cuando: fechaCorta(f.desde), horas: `${f.inicio} – ${f.fin}` }));
   return [...semanales, ...fijas];
 }
 
@@ -84,74 +80,121 @@ function useLocalidades(zonaIds, token) {
     .map(([localidad, barrios]) => ({ localidad, barrios: barrios.sort((a, b) => a.localeCompare(b, 'es')) }));
 }
 
-function Seccion({ titulo, children }) {
+function Pin() {
   return (
-    <section className={styles.seccion}>
-      <h2>{titulo}</h2>
-      {children}
+    <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
+function Candado() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
+/** Localidades donde trabaja, con sus barrios. */
+export function Cobertura({ cuenta, token }) {
+  const localidades = useLocalidades(cuenta?.zonaIds ?? [], token);
+  return (
+    <section className={`card ${styles.tarjeta}`}>
+      <h2>Cobertura</h2>
+      {localidades === null && <p className={styles.vacio}>Cargando barrios…</p>}
+      {localidades?.length === 0 && <p className={styles.vacio}>Aún no indica sus barrios.</p>}
+      {localidades?.length > 0 && (
+        <ul className={styles.localidades}>
+          {localidades.map((grupo) => (
+            <li key={grupo.localidad}>
+              <span className={styles.chip}>
+                <Pin /> {grupo.localidad}
+              </span>
+              <small>{grupo.barrios.join(', ')}</small>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
 
-/** Lo que el contratante necesita saber antes de contratar: disponibilidad, tarifas, dónde y cuándo trabaja. */
-export function DetallesTrabajador({ cuenta, token }) {
-  const localidades = useLocalidades(cuenta?.zonaIds ?? [], token);
+/** El perfil público no muestra datos de contacto: se contrata desde OficioYa. */
+export function Contacto() {
+  return (
+    <section className={`card ${styles.tarjeta} ${styles.contacto}`}>
+      <h2>Contacto</h2>
+      <p className={styles.privacidad}>
+        <Candado />
+        <span>Por privacidad, los datos de contacto del trabajador no se muestran en su perfil público.</span>
+      </p>
+    </section>
+  );
+}
+
+export function OficiosYTarifas({ cuenta }) {
+  if (!cuenta?.tarifas?.length) {
+    return null;
+  }
+  return (
+    <section className={`card ${styles.tarjeta}`}>
+      <h2>Oficios y tarifas</h2>
+      <ul className={styles.tarifas}>
+        {cuenta.tarifas.map((item, indice) => (
+          <li key={item.nombre}>
+            <div>
+              <strong>{item.nombre}</strong>
+              {indice === 0 && <span className={styles.principal}>Principal</span>}
+            </div>
+            <span>
+              {item.tarifa == null ? (
+                'Por acordar'
+              ) : (
+                <>
+                  <strong>{dinero(item.tarifa)}</strong> <small>{unidad(item.unidad)}</small>
+                </>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className={styles.vacio}>Las tarifas son aproximadas y pueden variar según el trabajo.</p>
+    </section>
+  );
+}
+
+export function Disponibilidad({ cuenta }) {
   if (!cuenta) {
     return null;
   }
   const franjas = horario(cuenta.franjas ?? []);
-
   return (
-    <div className={styles.detalles}>
+    <section className={`card ${styles.tarjeta}`}>
+      <h2>Disponibilidad</h2>
       <p className={cuenta.disponibleAhora ? styles.disponible : styles.noDisponible}>
         <span aria-hidden="true" /> {cuenta.disponibleAhora ? 'Disponible ahora' : 'No disponible ahora'}
       </p>
-
-      {cuenta.tarifas?.length > 0 && (
-        <Seccion titulo="Oficios y tarifas">
-          <ul className={styles.lista}>
-            {cuenta.tarifas.map((item) => (
-              <li key={item.nombre}>
-                <span>{item.nombre}</span>
-                <strong>
-                  {item.tarifa == null ? 'Por acordar' : `${dinero(item.tarifa)} ${UNIDADES[item.unidad] ?? ''}`}
-                </strong>
-              </li>
-            ))}
-          </ul>
-        </Seccion>
+      {franjas.length === 0 ? (
+        <p className={styles.vacio}>Aún no publica su horario. Puedes proponer uno al contratarlo.</p>
+      ) : (
+        <ul className={styles.franjas}>
+          {franjas.map((franja) => (
+            <li key={`${franja.cuando}-${franja.horas}`}>
+              <span className={styles.tipoFranja}>{franja.tipo}</span>
+              <div>
+                <strong>{franja.cuando}</strong>
+                <small>{franja.horas}</small>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
-
-      <Seccion titulo="Dónde trabaja">
-        {localidades === null && <p className={styles.vacio}>Cargando barrios…</p>}
-        {localidades?.length === 0 && <p className={styles.vacio}>Aún no indica sus barrios.</p>}
-        {localidades?.length > 0 && (
-          <ul className={styles.localidades}>
-            {localidades.map((grupo) => (
-              <li key={grupo.localidad}>
-                <strong>{grupo.localidad}</strong>
-                <span>{grupo.barrios.join(', ')}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Seccion>
-
-      <Seccion titulo="Horario">
-        {franjas.length === 0 ? (
-          <p className={styles.vacio}>Aún no publica su horario. Puedes proponer uno al contratarlo.</p>
-        ) : (
-          <ul className={styles.lista}>
-            {franjas.map((franja) => (
-              <li key={`${franja.cuando}-${franja.horas}`}>
-                <span>{franja.cuando}</span>
-                <strong>{franja.horas}</strong>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Seccion>
-    </div>
+    </section>
   );
 }
 
@@ -161,19 +204,16 @@ export function TrabajosRealizados({ fotos }) {
     return null;
   }
   return (
-    <div className={styles.galeria}>
-      <div>
-        <span className="eyebrow">Galería</span>
-        <h2>Trabajos realizados</h2>
-      </div>
-      <ul>
+    <section className={`card ${styles.tarjeta}`}>
+      <h2>Trabajos realizados</h2>
+      <ul className={styles.galeria}>
         {fotos.map((foto) => (
           <li key={foto.id}>
             <img src={urlImagen(foto.url)} alt={foto.descripcion || 'Trabajo realizado'} loading="lazy" />
-            {foto.descripcion && <span>{foto.descripcion}</span>}
+            <span>{foto.descripcion || 'Sin descripción'}</span>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }

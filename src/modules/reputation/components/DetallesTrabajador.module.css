@@ -1,117 +1,215 @@
-.detalles {
+.tarjeta {
   display: grid;
-  gap: 16px;
-  border-top: 1px solid var(--color-border);
+  gap: 14px;
+  min-width: 0;
 }
 
-.disponible,
-.noDisponible {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 14px 0 0;
-  font-weight: 700;
-  font-size: 0.92rem;
-}
-
-.disponible {
-  color: var(--color-success);
-}
-
-.noDisponible {
-  color: var(--color-text-muted);
-}
-
-.disponible span,
-.noDisponible span {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.seccion {
-  display: grid;
-  gap: 8px;
-}
-
-.seccion h2 {
+.tarjeta h2 {
   margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  font-size: 1.2rem;
 }
 
-.lista,
+.vacio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* Cobertura */
 .localidades {
   display: grid;
-  gap: 6px;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.lista li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.92rem;
-}
-
-.lista strong {
-  text-align: right;
-}
-
 .localidades li {
   display: grid;
-  gap: 2px;
-  font-size: 0.92rem;
+  justify-items: start;
+  gap: 4px;
 }
 
-.localidades span,
-.vacio {
+.localidades small {
+  padding-left: 4px;
   color: var(--color-text-muted);
-  font-size: 0.88rem;
+  font-size: 0.8rem;
 }
 
-.vacio {
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eaf3ee;
+  color: #2f5d4a;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Contacto */
+.contacto {
+  background: #e3ece6;
+}
+
+.privacidad {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
 }
 
+.privacidad svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* Oficios y tarifas */
+.tarifas {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarifas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.tarifas li > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tarifas small {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.principal {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-accent);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Disponibilidad */
+.disponible,
+.noDisponible {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.disponible {
+  background: #eaf3ee;
+  color: var(--color-success);
+}
+
+.noDisponible {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+.disponible span,
+.noDisponible span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.franjas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.franjas li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.franjas li:last-child {
+  border-bottom: 0;
+}
+
+.franjas li > div {
+  display: grid;
+  gap: 2px;
+}
+
+.franjas small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.tipoFranja {
+  flex: none;
+  min-width: 92px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #edf4f0;
+  color: #2f5d4a;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Trabajos realizados */
 .galeria {
   display: grid;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.galeria h2 {
-  margin: 0;
-}
-
-.galeria ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .galeria li {
-  display: grid;
-  gap: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .galeria img {
+  display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: var(--radius-sm);
   background: var(--color-surface-alt);
 }
 
-.galeria li span {
-  color: var(--color-text-muted);
+.galeria span {
+  display: block;
+  padding: 10px 12px;
+  color: var(--color-text);
   font-size: 0.85rem;
 }
