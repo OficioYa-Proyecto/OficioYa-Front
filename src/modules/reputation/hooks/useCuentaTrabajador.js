@@ -25,6 +25,7 @@ async function cargarCuenta(trabajadorId, token) {
   const perfil = await perfilDeWorker(trabajadorId, token);
   const userId = perfil?.userId ?? null;
   const oficio = perfil?.primaryTrade?.trade?.name ?? '';
+  const categoria = perfil?.primaryTrade?.trade?.category?.name ?? '';
   // Oficios que ofrece (principal primero) y barrios donde trabaja: Nueva solicitud los usa para preseleccionar.
   const oficios = [perfil?.primaryTrade, ...(perfil?.secondaryTrades ?? [])]
     .map((item) => item?.trade)
@@ -63,7 +64,7 @@ async function cargarCuenta(trabajadorId, token) {
       nombre = '';
     }
   }
-  return { userId, nombre, roles, oficio, oficios, zonaIds, franjas, tarifas, fotos, disponibleAhora };
+  return { userId, nombre, roles, oficio, categoria, oficios, zonaIds, franjas, tarifas, fotos, disponibleAhora };
 }
 
 export function useCuentaTrabajador(trabajadorId, token) {
@@ -78,6 +79,7 @@ export function useCuentaTrabajador(trabajadorId, token) {
           userId: null,
           nombre: '',
           oficio: '',
+          categoria: '',
           oficios: [],
           zonaIds: [],
           franjas: [],

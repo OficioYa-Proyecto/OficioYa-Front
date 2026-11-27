@@ -1,8 +1,8 @@
 .pagina {
   display: grid;
-  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
-  align-items: start;
-  gap: 28px;
+  gap: 20px;
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .estado {
@@ -13,29 +13,65 @@
   text-align: center;
 }
 
-.resumen {
-  display: grid;
-  gap: 18px;
+/* Cabecera: foto, nombre y oficio a la izquierda; tarifa, calificación y Contratar a la derecha. */
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  border-left: 6px solid var(--color-primary);
+  background: linear-gradient(120deg, var(--color-surface) 0%, #e3ece6 140%);
 }
 
 .persona {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  flex: 1 1 260px;
+  gap: 4px;
   min-width: 0;
 }
 
 .persona h1 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
 }
 
 .persona p {
   margin: 0;
+  font-size: 1.05rem;
+}
+
+.lateral {
+  display: grid;
+  justify-items: stretch;
+  gap: 10px;
+  min-width: 230px;
+}
+
+.precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.precio span {
+  font-size: 0.8rem;
+}
+
+.precio strong {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
 }
 
 .pausado {
-  display: inline-block;
+  justify-self: start;
   margin-top: 6px;
   padding: 3px 10px;
   border-radius: 20px;
@@ -47,21 +83,21 @@
 
 .calificacion {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 16px;
-  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  border-radius: 18px;
   background: var(--color-surface-alt);
 }
 
 .calificacion strong {
-  font-size: 2.1rem;
+  font-size: 1.9rem;
 }
 
 .calificacion p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .contratar {
@@ -80,10 +116,29 @@
   color: var(--color-danger);
 }
 
+/* Columnas: cobertura y contacto a la izquierda; tarifas, disponibilidad, trabajos y reseñas a la derecha. */
+.columnas {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.pila {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
 .resenas {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
+}
+
+.resenas h2 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .mensaje {
@@ -96,6 +151,8 @@
   display: grid;
   gap: 8px;
   padding: 18px;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
 }
 
 .resena p {
@@ -125,11 +182,13 @@
   font-size: 0.85rem;
 }
 
-@media (max-width: 900px) {
-  .pagina {
+@media (max-width: 860px) {
+  .columnas {
     grid-template-columns: minmax(0, 1fr);
-    max-width: 680px;
-    margin: 0 auto;
+  }
+
+  .lateral {
+    width: 100%;
   }
 }
 
