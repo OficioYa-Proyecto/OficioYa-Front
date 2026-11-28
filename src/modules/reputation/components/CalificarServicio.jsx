@@ -45,6 +45,13 @@ function CalificarServicio({ request, rol, autoOpen = false }) {
     );
   }
 
+  // El trabajador puede ver el perfil del contratante (sus reseñas) antes o después de calificarlo.
+  const perfilContratante = rol === 'TRABAJADOR' && request.contractorId && (
+    <Link to={`/contratantes/${request.contractorId}`} className={styles.enlace}>
+      Ver perfil
+    </Link>
+  );
+
   if (calificado) {
     return (
       <>
@@ -54,6 +61,7 @@ function CalificarServicio({ request, rol, autoOpen = false }) {
             Ver perfil
           </Link>
         )}
+        {perfilContratante}
       </>
     );
   }
@@ -61,6 +69,7 @@ function CalificarServicio({ request, rol, autoOpen = false }) {
   return (
     <>
       <Button onClick={() => setAbierto(true)}>Calificar</Button>
+      {perfilContratante}
       {abierto && (
         <CalificarModal
           servicio={{
