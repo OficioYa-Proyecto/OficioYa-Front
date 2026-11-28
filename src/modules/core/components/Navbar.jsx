@@ -11,10 +11,29 @@ import styles from './Navbar.module.css';
 
 function BellIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-    </svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+  );
+}
+
+const ICON_PATHS = {
+  '/home': <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></>,
+  '/buscar': <><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /></>,
+  '/nueva-solicitud': <><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></>,
+  '/solicitudes': <><rect x="5" y="4" width="14" height="17" rx="2" /><line x1="9" y1="9" x2="15" y2="9" /><line x1="9" y1="13" x2="15" y2="13" /></>,
+  '/mis-servicios': <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /></>,
+  '/worker': <><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z" /></>,
+};
+const DEFAULT_ICON = <circle cx="12" cy="12" r="3" />;
+
+function NavIcon({ to }) {
+  return (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {ICON_PATHS[to] ?? DEFAULT_ICON}
+      </svg>
   );
 }
 
@@ -69,17 +88,18 @@ function Navbar() {
   const isAuthPage = pathname.startsWith('/auth');
   const [session, setSession] = useState(() => getSession());
   const userRoles = useMemo(
-    () => (session?.roles ?? []).map((role) => normalizeRole(role)),
-    [session?.roles],
+      () => (session?.roles ?? []).map((role) => normalizeRole(role)),
+      [session?.roles],
   );
   const isAdmin = userRoles.includes('ADMIN');
 
   const [userName, setUserName] = useState(
-    () => localStorage.getItem('oy_userName') || ''
+      () => localStorage.getItem('oy_userName') || ''
   );
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerUserOpen, setDrawerUserOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifItems, setNotifItems] = useState([]);
   const menuRef = useRef(null);
@@ -129,22 +149,22 @@ function Navbar() {
   ];
 
   const visibleLinks = navLinks
-    .filter((link) => {
-      // Quitar 'Mi perfil' del menu para evitar redundancia
-      if (link.to === '/users/me') return false;
-      // Ocultar 'Registrarse' en el menú superior cuando ya hay sesión activa
-      if (session && link.to === '/register') return false;
-      if (!link.roles || link.roles.length === 0) return true;
-      return link.roles.some((r) => userRoles.includes(String(r).toUpperCase()));
-    })
-    .sort((a, b) => {
-      const idxA = MENU_ORDER.indexOf(a.to);
-      const idxB = MENU_ORDER.indexOf(b.to);
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return -1;
-      if (idxB !== -1) return 1;
-      return 0;
-    });
+      .filter((link) => {
+        // Quitar 'Mi perfil' del menu para evitar redundancia
+        if (link.to === '/users/me') return false;
+        // Ocultar 'Registrarse' en el menú superior cuando ya hay sesión activa
+        if (session && link.to === '/register') return false;
+        if (!link.roles || link.roles.length === 0) return true;
+        return link.roles.some((r) => userRoles.includes(String(r).toUpperCase()));
+      })
+      .sort((a, b) => {
+        const idxA = MENU_ORDER.indexOf(a.to);
+        const idxB = MENU_ORDER.indexOf(b.to);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return 0;
+      });
 
   function handleLogout() {
     setMenuOpen(false);
@@ -167,125 +187,125 @@ function Navbar() {
 
     if (roles.includes('TRABAJADOR')) {
       tasks.push(
-        requestsService
-          .listMine('TRABAJADOR')
-          .then((list) => {
-            (Array.isArray(list) ? list : []).forEach((r) => {
-              if (r?.state === 'PENDING') {
-                add({
-                  id: r.id,
-                  state: 'PENDING',
-                  title: 'Servicio entrante',
-                  description: r.description || 'Nueva reparación cerca de ti',
-                  actionLabel: 'Ver solicitud',
-                  link: `/mis-servicios?request=${r.id}`,
-                  color: 'blue',
+          requestsService
+              .listMine('TRABAJADOR')
+              .then((list) => {
+                (Array.isArray(list) ? list : []).forEach((r) => {
+                  if (r?.state === 'PENDING') {
+                    add({
+                      id: r.id,
+                      state: 'PENDING',
+                      title: 'Servicio entrante',
+                      description: r.description || 'Nueva reparación cerca de ti',
+                      actionLabel: 'Ver solicitud',
+                      link: `/mis-servicios?request=${r.id}`,
+                      color: 'blue',
+                    });
+                  }
+                  if (r?.state === 'CONFLICT') {
+                    add({
+                      id: r.id,
+                      state: 'CONFLICT',
+                      title: 'Servicio en disputa',
+                      description: 'Dos trabajadores aceptaron; el contratante está eligiendo.',
+                      actionLabel: 'Ver estado',
+                      link: `/mis-servicios?request=${r.id}`,
+                      color: 'warn',
+                    });
+                  }
+                  if (r?.state === 'COMPLETED') {
+                    add({
+                      id: r.id,
+                      state: 'COMPLETED',
+                      title: 'Califica al contratante',
+                      description: 'El servicio quedó completado. Cuéntanos cómo fue.',
+                      actionLabel: 'Calificar servicio',
+                      link: `/solicitudes?calificar=${r.id}`,
+                      color: 'primary',
+                    });
+                  }
                 });
-              }
-              if (r?.state === 'CONFLICT') {
-                add({
-                  id: r.id,
-                  state: 'CONFLICT',
-                  title: 'Servicio en disputa',
-                  description: 'Dos trabajadores aceptaron; el contratante está eligiendo.',
-                  actionLabel: 'Ver estado',
-                  link: `/mis-servicios?request=${r.id}`,
-                  color: 'warn',
-                });
-              }
-              if (r?.state === 'COMPLETED') {
-                add({
-                  id: r.id,
-                  state: 'COMPLETED',
-                  title: 'Califica al contratante',
-                  description: 'El servicio quedó completado. Cuéntanos cómo fue.',
-                  actionLabel: 'Calificar servicio',
-                  link: `/solicitudes?calificar=${r.id}`,
-                  color: 'primary',
-                });
-              }
-            });
-          })
-          .catch(() => {}),
+              })
+              .catch(() => {}),
       );
     }
 
     if (roles.includes('CONTRATANTE')) {
       tasks.push(
-        requestsService
-          .listMine('CONTRATANTE')
-          .then((list) => {
-            const all = Array.isArray(list) ? list : [];
-            const conflictRoots = new Set(
-              all.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
-            );
-            const conflictCounts = all
-              .filter((r) => r?.state === 'CONFLICT' && r?.rootId)
-              .reduce((counts, r) => {
-                counts.set(r.rootId, (counts.get(r.rootId) || 0) + 1);
-                return counts;
-              }, new Map());
-            conflictRoots.forEach((rootId) => {
-              const count = conflictCounts.get(rootId) || 2;
-              add({
-                id: `conflict-${rootId}`,
-                state: 'CONFLICT',
-                title: 'Disputa por resolver',
-                description: `${count} trabajadores aceptaron tu solicitud. Elige cuál continúa.`,
-                actionLabel: 'Elegir trabajador',
-                link: `/solicitudes?conflict=${rootId}`,
-                color: 'warn',
-              });
-            });
-            all
-              .filter((r) => r?.state === 'ACCEPTED' && !conflictRoots.has(r?.rootId))
-              .forEach((r) =>
-                add({
-                  id: r.id,
-                  state: 'ACCEPTED',
-                  title: 'Solicitud aceptada',
-                  description: r.description || 'Un trabajador aceptó tu solicitud.',
-                  actionLabel: 'Ver solicitud',
-                  link: `/solicitudes?request=${r.id}`,
-                  color: 'blue',
-                }),
-              );
-            all
-              .filter((r) => r?.state === 'COMPLETED')
-              .forEach((r) =>
-                add({
-                  id: r.id,
-                  state: 'COMPLETED',
-                  title: 'Trabajo completado',
-                  description: 'El trabajador marcó el servicio como terminado.',
-                  actionLabel: 'Calificar el servicio',
-                  link: `/solicitudes?calificar=${r.id}`,
-                  color: 'primary',
-                }),
-              );
-          })
-          .catch(() => {}),
+          requestsService
+              .listMine('CONTRATANTE')
+              .then((list) => {
+                const all = Array.isArray(list) ? list : [];
+                const conflictRoots = new Set(
+                    all.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
+                );
+                const conflictCounts = all
+                    .filter((r) => r?.state === 'CONFLICT' && r?.rootId)
+                    .reduce((counts, r) => {
+                      counts.set(r.rootId, (counts.get(r.rootId) || 0) + 1);
+                      return counts;
+                    }, new Map());
+                conflictRoots.forEach((rootId) => {
+                  const count = conflictCounts.get(rootId) || 2;
+                  add({
+                    id: `conflict-${rootId}`,
+                    state: 'CONFLICT',
+                    title: 'Disputa por resolver',
+                    description: `${count} trabajadores aceptaron tu solicitud. Elige cuál continúa.`,
+                    actionLabel: 'Elegir trabajador',
+                    link: `/solicitudes?conflict=${rootId}`,
+                    color: 'warn',
+                  });
+                });
+                all
+                    .filter((r) => r?.state === 'ACCEPTED' && !conflictRoots.has(r?.rootId))
+                    .forEach((r) =>
+                        add({
+                          id: r.id,
+                          state: 'ACCEPTED',
+                          title: 'Solicitud aceptada',
+                          description: r.description || 'Un trabajador aceptó tu solicitud.',
+                          actionLabel: 'Ver solicitud',
+                          link: `/solicitudes?request=${r.id}`,
+                          color: 'blue',
+                        }),
+                    );
+                all
+                    .filter((r) => r?.state === 'COMPLETED')
+                    .forEach((r) =>
+                        add({
+                          id: r.id,
+                          state: 'COMPLETED',
+                          title: 'Trabajo completado',
+                          description: 'El trabajador marcó el servicio como terminado.',
+                          actionLabel: 'Calificar el servicio',
+                          link: `/solicitudes?calificar=${r.id}`,
+                          color: 'primary',
+                        }),
+                    );
+              })
+              .catch(() => {}),
       );
     }
 
     // RF-13. El administrador ve en la campana las peticiones pendientes para quitar un rol
     if (roles.includes('ADMIN')) {
       tasks.push(
-        listarPeticionesRol({ status: 'PENDING' })
-          .then((list) => {
-            (Array.isArray(list) ? list : []).forEach((p) =>
-              add({
-                id: `rr-${p.id}`,
-                state: 'PENDING',
-                title: 'Nueva petición',
-                description: `${p.userName ?? 'Un usuario'} pide dejar de ser ${NOMBRES_ROL[p.role]?.toLowerCase() ?? p.role}.`,
-                actionLabel: 'Revisar petición',
-                link: '/admin/role-requests',
-                color: 'warn',
-              }),
-            );
-          })
-          .catch(() => {}),
+          listarPeticionesRol({ status: 'PENDING' })
+              .then((list) => {
+                (Array.isArray(list) ? list : []).forEach((p) =>
+                    add({
+                      id: `rr-${p.id}`,
+                      state: 'PENDING',
+                      title: 'Nueva petición',
+                      description: `${p.userName ?? 'Un usuario'} pide dejar de ser ${NOMBRES_ROL[p.role]?.toLowerCase() ?? p.role}.`,
+                      actionLabel: 'Revisar petición',
+                      link: '/admin/role-requests',
+                      color: 'warn',
+                    }),
+                );
+              })
+              .catch(() => {}),
       );
     }
 
@@ -325,6 +345,7 @@ function Navbar() {
       if (e.key === 'Escape') {
         setMenuOpen(false);
         setDrawerOpen(false);
+        setDrawerUserOpen(false);
         setNotifOpen(false);
       }
     }
@@ -333,236 +354,277 @@ function Navbar() {
   }, []);
 
   return (
-    <header className={styles.navbar}>
-      <div className={styles.leftArea}>
-        {!isAuthPage && (
-          <button
-            type="button"
-            className={styles.hamburgerBtn}
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Abrir menú de navegación"
-            aria-expanded={drawerOpen}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-        )}
-        <Link to={session ? '/home' : '/'} aria-label="OficioYa" className={styles.brandLink}>
-          <img src={logo} alt="OficioYa" className={styles.logo} />
-        </Link>
-      </div>
-
-      {/* Acceso a cuenta / perfil a la derecha */}
-      {!isAuthPage && (
-        <div className={styles.rightArea}>
-          {session && (
-            <div className={styles.notifWrap} ref={notifRef}>
+      <header className={styles.navbar}>
+        <div className={styles.leftArea}>
+          {!isAuthPage && (
               <button
-                type="button"
-                className={styles.notifBtn}
-                onClick={() => {
-                  if (!notifOpen) loadNotifications();
-                  setNotifOpen((prev) => !prev);
-                }}
-                aria-label="Notificaciones"
-                aria-expanded={notifOpen}
+                  type="button"
+                  className={styles.hamburgerBtn}
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label="Abrir menú de navegación"
+                  aria-expanded={drawerOpen}
               >
-                <BellIcon />
-                {notifItems.length > 0 && (
-                  <span className={styles.notifBadge}>{notifItems.length}</span>
-                )}
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
               </button>
-              {notifOpen && (
-                <div className={styles.notifDropdown} role="dialog" aria-label="Notificaciones">
-                  {notifItems.length === 0 ? (
-                    <p className={styles.notifEmpty}>Sin notificaciones nuevas</p>
-                  ) : (
-                    notifItems.map((item) => (
-                      <div
-                        key={item.key}
-                        className={`${styles.notifItem} ${notificationColorClass(item.color)}`}
-                      >
-                        <span className={styles.notifItemTitle}>{item.title}</span>
-                        <span className={styles.notifItemDesc}>{item.description}</span>
-                        <button
-                          type="button"
-                          className={styles.notifActionBtn}
-                          onClick={() => {
-                            markDismissed(session?.userId, item.key);
-                            setNotifOpen(false);
-                            setNotifItems((prev) => prev.filter((n) => n.key !== item.key));
-                            navigate(item.link);
-                          }}
-                        >
-                          {item.actionLabel}
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
           )}
-          {session && (
-            <div className={styles.accountWrap} ref={menuRef}>
-              <button
-                type="button"
-                className={styles.accountBtn}
-                onClick={() => setMenuOpen((prev) => !prev)}
-                aria-expanded={menuOpen}
-              >
+          <Link to={session ? '/home' : '/'} aria-label="OficioYa" className={styles.brandLink}>
+            <img src={logo} alt="OficioYa" className={styles.logo} />
+          </Link>
+        </div>
+
+        {/* Acceso a cuenta / perfil a la derecha */}
+        {!isAuthPage && (
+            <div className={styles.rightArea}>
+              {session && (
+                  <div className={styles.notifWrap} ref={notifRef}>
+                    <button
+                        type="button"
+                        className={styles.notifBtn}
+                        onClick={() => {
+                          if (!notifOpen) loadNotifications();
+                          setNotifOpen((prev) => !prev);
+                        }}
+                        aria-label="Notificaciones"
+                        aria-expanded={notifOpen}
+                    >
+                      <BellIcon />
+                      {notifItems.length > 0 && (
+                          <span className={styles.notifBadge}>{notifItems.length}</span>
+                      )}
+                    </button>
+                    {notifOpen && (
+                        <div className={styles.notifDropdown} role="dialog" aria-label="Notificaciones">
+                          {notifItems.length === 0 ? (
+                              <p className={styles.notifEmpty}>Sin notificaciones nuevas</p>
+                          ) : (
+                              notifItems.map((item) => (
+                                  <div
+                                      key={item.key}
+                                      className={`${styles.notifItem} ${notificationColorClass(item.color)}`}
+                                  >
+                                    <span className={styles.notifItemTitle}>{item.title}</span>
+                                    <span className={styles.notifItemDesc}>{item.description}</span>
+                                    <button
+                                        type="button"
+                                        className={styles.notifActionBtn}
+                                        onClick={() => {
+                                          markDismissed(session?.userId, item.key);
+                                          setNotifOpen(false);
+                                          setNotifItems((prev) => prev.filter((n) => n.key !== item.key));
+                                          navigate(item.link);
+                                        }}
+                                    >
+                                      {item.actionLabel}
+                                    </button>
+                                  </div>
+                              ))
+                          )}
+                        </div>
+                    )}
+                  </div>
+              )}
+              {session && (
+                  <div className={styles.accountWrap} ref={menuRef}>
+                    <button
+                        type="button"
+                        className={styles.accountBtn}
+                        onClick={() => setMenuOpen((prev) => !prev)}
+                        aria-expanded={menuOpen}
+                    >
                 <span className={styles.avatar}>
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className={styles.avatarImg} />
+                      <img src={avatarUrl} alt="" className={styles.avatarImg} />
                   ) : (
-                    getInitials(userName)
+                      getInitials(userName)
                   )}
                 </span>
-                <span className={styles.accountText}>
+                      <span className={styles.accountText}>
                   <span className={styles.accountName}>{getFirstName(userName)}</span>
                   <span className={styles.accountSub}>
                     Mi cuenta
                     <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </span>
                 </span>
-              </button>
-
-                {menuOpen && (
-                  <div className={styles.dropdown}>
-                    <Link
-                      to="/users/me"
-                      className={styles.dropdownItem}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Ver mi perfil
-                    </Link>
-                    <Link
-                      to="/users/me/edit"
-                      className={styles.dropdownItem}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Editar perfil
-                    </Link>
-                    {isAdmin && (
-                      <Link
-                        to="/admin/users"
-                        className={styles.dropdownItem}
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        Gestión de usuarios
-                      </Link>
-                    )}
-                    <button
-                      type="button"
-                      className={`${styles.dropdownItem} ${styles.logoutItem}`}
-                      onClick={handleLogout}
-                    >
-                      Cerrar sesión
                     </button>
+
+                    {menuOpen && (
+                        <div className={styles.dropdown}>
+                          <Link
+                              to="/users/me"
+                              className={styles.dropdownItem}
+                              onClick={() => setMenuOpen(false)}
+                          >
+                            Ver mi perfil
+                          </Link>
+                          <Link
+                              to="/users/me/edit"
+                              className={styles.dropdownItem}
+                              onClick={() => setMenuOpen(false)}
+                          >
+                            Editar perfil
+                          </Link>
+                          {isAdmin && (
+                              <Link
+                                  to="/admin/users"
+                                  className={styles.dropdownItem}
+                                  onClick={() => setMenuOpen(false)}
+                              >
+                                Gestión de usuarios
+                              </Link>
+                          )}
+                          <button
+                              type="button"
+                              className={`${styles.dropdownItem} ${styles.logoutItem}`}
+                              onClick={handleLogout}
+                          >
+                            Cerrar sesión
+                          </button>
+                        </div>
+                    )}
                   </div>
-                )}
-              </div>
-          )}
-        </div>
-      )}
-
-      {/* Drawer lateral en pantallas pequeñas */}
-      {!isAuthPage && drawerOpen && (
-        <div
-          className={styles.drawerBackdrop}
-          onClick={() => setDrawerOpen(false)}
-          role="presentation"
-        >
-          <aside
-            className={styles.drawer}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Menú principal de navegación"
-          >
-            <div className={styles.drawerHeader}>
-              <img src={logo} alt="OficioYa" className={styles.drawerLogo} />
-              <button
-                type="button"
-                className={styles.closeBtn}
-                onClick={() => setDrawerOpen(false)}
-                aria-label="Cerrar menú"
-              >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+              )}
             </div>
+        )}
 
-            <nav className={styles.drawerLinks}>
-              {visibleLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setDrawerOpen(false)}
-                  className={({ isActive }) =>
-                    isActive
-                      ? `${styles.drawerLink} ${styles.drawerActive}`
-                      : styles.drawerLink
-                  }
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-            </nav>
+        {/* Drawer lateral en pantallas pequeñas */}
+        {!isAuthPage && drawerOpen && (
+            <div
+                className={styles.drawerBackdrop}
+                onClick={() => { setDrawerOpen(false); setDrawerUserOpen(false); }}
+                role="presentation"
+            >
+              <aside
+                  className={styles.drawer}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Menú principal de navegación"
+              >
+                <div className={styles.drawerHeader}>
+                  <img src={logo} alt="OficioYa" className={styles.drawerLogo} />
+                  <button
+                      type="button"
+                      className={styles.closeBtn}
+                      onClick={() => { setDrawerOpen(false); setDrawerUserOpen(false); }}
+                      aria-label="Cerrar menú"
+                  >
+                    <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
 
-            {session && (
-              <div className={styles.drawerFooter}>
-                <div className={styles.drawerUser}>
+                <nav className={styles.drawerLinks}>
+                  {visibleLinks.map((link) => (
+                      <NavLink
+                          key={link.to}
+                          to={link.to}
+                          onClick={() => setDrawerOpen(false)}
+                          className={({ isActive }) =>
+                              isActive
+                                  ? `${styles.drawerLink} ${styles.drawerActive}`
+                                  : styles.drawerLink
+                          }
+                      >
+                        <NavIcon to={link.to} />
+                        {link.label}
+                      </NavLink>
+                  ))}
+                </nav>
+
+                {session && (
+                    <div className={styles.drawerFooter}>
+                      {drawerUserOpen && (
+                          <div className={styles.drawerUserMenu}>
+                            <button
+                                type="button"
+                                className={styles.drawerLogout}
+                                onClick={() => {
+                                  setDrawerOpen(false);
+                                  setDrawerUserOpen(false);
+                                  handleLogout();
+                                }}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                              </svg>
+                              Cerrar sesión
+                            </button>
+                          </div>
+                      )}
+                      <button
+                          type="button"
+                          className={styles.drawerUserBtn}
+                          onClick={() => setDrawerUserOpen((prev) => !prev)}
+                          aria-expanded={drawerUserOpen}
+                      >
                   <span className={styles.avatar}>
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt="" className={styles.avatarImg} />
+                        <img src={avatarUrl} alt="" className={styles.avatarImg} />
                     ) : (
-                      getInitials(userName)
+                        getInitials(userName)
                     )}
                   </span>
-                  <div>
-                    <div className={styles.accountName}>{userName || 'Usuario'}</div>
-                    <div className={styles.accountSub}>Sesión iniciada</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
-    </header>
+                        <span>
+                    <span className={styles.accountName}>{userName || 'Usuario'}</span>
+                    <span className={styles.accountSub}>Sesión iniciada</span>
+                  </span>
+                        <svg
+                            className={styles.drawerChevron}
+                            style={{ transform: drawerUserOpen ? 'none' : 'rotate(180deg)' }}
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                          <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                      </button>
+                    </div>
+                )}
+              </aside>
+            </div>
+        )}
+      </header>
   );
 }
 
