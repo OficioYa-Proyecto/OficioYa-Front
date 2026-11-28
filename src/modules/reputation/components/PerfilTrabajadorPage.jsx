@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import Button from '../../core/design-system/Button';
 import estilosBoton from '../../core/design-system/Button.module.css';
@@ -60,6 +60,7 @@ function ResenasComoContratante({ esContratante, estado, nombres, puedeReportar,
 function PerfilTrabajadorPage() {
   const { id } = useParams();
   const location = useLocation();
+  const seccionResenas = useRef(null);
   const { token, roles, userId: miUserId } = leerSesion();
   const cuenta = useCuentaTrabajador(id, token);
   // Reputation guarda las reseñas con la cuenta de Users (el id que usa Service), no con el id del perfil de Worker.
@@ -83,6 +84,13 @@ function PerfilTrabajadorPage() {
   // Nombre y oficio llegan desde la tarjeta de búsqueda. Si se abre el enlace directo, se piden a Worker y Users.
   const perfil = PERFILES[id] ?? location.state ?? (cuenta?.nombre ? cuenta : PERFIL_DESCONOCIDO);
   const puedeReportar = roles.includes('CONTRATANTE') || roles.includes('TRABAJADOR');
+
+  // "Ver reseñas" desde Mi perfil enlaza con #resenas: al cargar, la página baja hasta las reseñas.
+  useEffect(() => {
+    if (!cargando && location.hash === '#resenas') {
+      seccionResenas.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [cargando, location.hash]);
 
   function alReportar() {
     setEnReporte(null);
@@ -164,7 +172,7 @@ function PerfilTrabajadorPage() {
           <OficiosYTarifas cuenta={cuenta} />
           <Disponibilidad cuenta={cuenta} />
           <TrabajosRealizados fotos={cuenta?.fotos} />
-          <section className={`card ${styles.resenas}`}>
+          <section ref={seccionResenas} id="resenas" className={`card ${styles.resenas}`}>
             <h2>Reseñas recientes</h2>
             <div className={styles.pestanas} role="tablist" aria-label="Tipo de reseñas">
               <button

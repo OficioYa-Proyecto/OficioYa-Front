@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import estilosBoton from '../../core/design-system/Button.module.css';
 import { getToken } from '../../core/lib/session';
 import { decimal } from '../formatos';
 import * as reputationService from '../services/reputationService';
@@ -10,6 +12,8 @@ const TIPOS = {
   CONTRATANTE: {
     titulo: 'Como contratante',
     consultar: reputationService.obtenerReputacionContratante,
+    // Perfil público donde se leen todas las reseñas (los dos aceptan el id de la cuenta).
+    ruta: (usuarioId) => `/contratantes/${usuarioId}`,
     promedio: (datos) => datos.promedioCalificaciones,
     quienes: 'trabajadores',
     sinResenas: 'Aún no tienes calificaciones. Los trabajadores te califican al terminar un servicio.',
@@ -17,6 +21,7 @@ const TIPOS = {
   TRABAJADOR: {
     titulo: 'Como trabajador',
     consultar: reputationService.obtenerReputacion,
+    ruta: (usuarioId) => `/trabajadores/${usuarioId}#resenas`,
     // La reputación del trabajador ya descuenta las penalizaciones (por ejemplo, cancelaciones tardías).
     promedio: (datos) => datos.reputacion,
     quienes: 'clientes',
@@ -72,6 +77,14 @@ function Calificacion({ rol, usuarioId }) {
             </div>
           </div>
           {total === 0 && <p className={styles.nota}>{tipo.sinResenas}</p>}
+          {total > 0 && (
+            <Link
+              to={tipo.ruta(usuarioId)}
+              className={`${estilosBoton.button} ${estilosBoton.secondary} ${styles.verResenas}`}
+            >
+              Ver {total === 1 ? 'la reseña' : `las ${total} reseñas`}
+            </Link>
+          )}
           {rol === 'TRABAJADOR' && datos.estado === 'PAUSADO' && (
             <p className={styles.aviso}>Tu perfil está pausado por baja reputación: no recibes nuevas solicitudes.</p>
           )}

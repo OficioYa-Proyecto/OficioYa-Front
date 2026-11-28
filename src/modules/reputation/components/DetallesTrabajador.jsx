@@ -126,13 +126,13 @@ export function Cobertura({ cuenta, token }) {
 }
 
 /** El perfil público no muestra datos de contacto: se contrata desde OficioYa. */
-export function Contacto() {
+export function Contacto({ quien = 'trabajador' }) {
   return (
     <section className={`card ${styles.tarjeta} ${styles.contacto}`}>
       <h2>Contacto</h2>
       <p className={styles.privacidad}>
         <Candado />
-        <span>Por privacidad, los datos de contacto del trabajador no se muestran en su perfil público.</span>
+        <span>Por privacidad, los datos de contacto del {quien} no se muestran en su perfil público.</span>
       </p>
     </section>
   );
