@@ -57,7 +57,7 @@ function Icon({ children }) {
 
 // Tarjeta de una solicitud: mismo lenguaje visual que las notificaciones del mockup
 // (título, fecha, hora y ubicación con íconos, y el estado como etiqueta).
-function RequestCard({ request, actions, onAction, extra = null, personLabel = '', personName = '' }) {
+function RequestCard({ request, actions, onAction, extra = null, aside = null, personLabel = '', personName = '' }) {
   const meta = STATE_META[request.state] ?? { label: request.state, tone: 'muted' };
   const { date, time } = splitSchedule(request.scheduledDateTime);
   const locationLabel = [request.locality, request.neighborhood].filter(Boolean).join(' · ') || 'Ubicación';
@@ -66,7 +66,14 @@ function RequestCard({ request, actions, onAction, extra = null, personLabel = '
     <article className={styles.card}>
       <div className={styles.top}>
         <h3>{deriveTitle(request.description)}</h3>
-        <span className={`${styles.badge} ${styles[meta.tone]}`}>{meta.label}</span>
+        {aside ? (
+          <div className={styles.estado}>
+            <span className={`${styles.badge} ${styles[meta.tone]}`}>{meta.label}</span>
+            {aside}
+          </div>
+        ) : (
+          <span className={`${styles.badge} ${styles[meta.tone]}`}>{meta.label}</span>
+        )}
       </div>
 
       {request.state === 'CONFLICT' && (
