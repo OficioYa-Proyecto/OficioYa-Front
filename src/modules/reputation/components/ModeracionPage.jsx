@@ -1,18 +1,25 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Button from '../../core/design-system/Button';
 import ErrorMessage from '../../core/components/ErrorMessage';
 import { MOTIVOS_REPORTE } from '../config';
 import { fecha } from '../formatos';
 import { useModeracion } from '../hooks/useModeracion';
-import * as reputationService from '../services/reputationService';
 import { leerSesion } from '../sesion';
+import Skeleton from '../../users/components/Skeleton';
 import Estrellas from './Estrellas';
 import styles from './ModeracionPage.module.css';
 
-const PESTANAS = [
-  { valor: 'PENDIENTE', nombre: 'Pendientes' },
-  { valor: 'RESUELTO', nombre: 'Resueltos' },
+const FILTROS = [
+  { id: 'PENDIENTE', label: 'Pendientes' },
+  { id: 'RESUELTO', label: 'Resueltos' },
+  { id: '', label: 'Todos' },
 ];
+
+function coincide(reporte, filtro) {
+  if (!filtro) return true;
+  if (filtro === 'RESUELTO') return reporte.estado === 'RESUELTO';
+  return reporte.estado !== 'RESUELTO';
+}
 
 const RESULTADOS = {
   RESENA_RETIRADA: 'Reseña retirada',
@@ -23,21 +30,38 @@ function motivo(valor) {
   return MOTIVOS_REPORTE.find((opcion) => opcion.valor === valor)?.etiqueta ?? valor;
 }
 
-function TarjetaReporte({ reporte, resolviendo, alResolver }) {
-  const { resena } = reporte;
+function TarjetaReporte({ reporte, resena, alResolver }) {
+  const [enviando, setEnviando] = useState(null);
+  const [error, setError] = useState(null);
+
+  async function resolver(resultado) {
+    setEnviando(resultado);
+    setError(null);
+    try {
+      await alResolver(reporte.id, resultado);
+    } catch (problema) {
+      setError(problema.message);
+    } finally {
+      setEnviando(null);
+    }
+  }
 
   return (
     <article className={`card ${styles.reporte}`}>
       <div className={styles.cabecera}>
         <span className={styles.motivo}>{motivo(reporte.motivo)}</span>
-        <small>Reportado el {fecha(reporte.fechaReporte)}</small>
+        <small className={styles.fecha}>Reportado el {fecha(reporte.fechaReporte)}</small>
       </div>
 
-      <p className={styles.descripcion}>{reporte.descripcion}</p>
+      <p className={styles.descripcion}>
+        <strong>Motivo:</strong> {reporte.descripcion || 'Sin descripción.'}
+      </p>
 
       <div className={styles.resena}>
         <span className="eyebrow">Reseña reportada</span>
-        {resena ? (
+        {resena === undefined ? (
+          <Skeleton lines={1} />
+        ) : resena ? (
           <>
             <Estrellas valor={resena.puntuacion} tamano={16} />
             <p>{resena.comentario || 'Sin comentario.'}</p>
@@ -54,18 +78,27 @@ function TarjetaReporte({ reporte, resolviendo, alResolver }) {
           {reporte.fechaResolucion && ` · ${fecha(reporte.fechaResolucion)}`}
         </p>
       ) : (
-        <div className={styles.acciones}>
-          <Button
-            variant="secondary"
-            disabled={resolviendo}
-            onClick={() => alResolver(reporte.id, 'RESENA_MANTENIDA')}
-          >
-            Mantener reseña
-          </Button>
-          <Button disabled={resolviendo} onClick={() => alResolver(reporte.id, 'RESENA_RETIRADA')}>
-            Retirar reseña
-          </Button>
-        </div>
+        <>
+          <ErrorMessage error={error} />
+          <div className={styles.acciones}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={enviando !== null}
+              onClick={() => resolver('RESENA_MANTENIDA')}
+            >
+              {enviando === 'RESENA_MANTENIDA' ? 'Manteniendo...' : 'Mantener reseña'}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={enviando !== null}
+              onClick={() => resolver('RESENA_RETIRADA')}
+            >
+              {enviando === 'RESENA_RETIRADA' ? 'Retirando...' : 'Retirar reseña'}
+            </Button>
+          </div>
+        </>
       )}
     </article>
   );
@@ -73,31 +106,21 @@ function TarjetaReporte({ reporte, resolviendo, alResolver }) {
 
 function ModeracionPage() {
   const { token } = leerSesion();
-  const [estado, setEstado] = useState('PENDIENTE');
-  const { cargando, error, reportes, recargar } = useModeracion(estado, token);
-  const [resolviendo, setResolviendo] = useState(null);
+  const [filtro, setFiltro] = useState('PENDIENTE');
+  const { cargando, error, reportes: todos, resenas, resolver, recargar } = useModeracion(token);
   const [mensaje, setMensaje] = useState(null);
-  const [errorAccion, setErrorAccion] = useState(null);
 
-  async function resolver(reporteId, resultado) {
-    setResolviendo(reporteId);
-    setErrorAccion(null);
+  const reportes = useMemo(() => todos.filter((reporte) => coincide(reporte, filtro)), [todos, filtro]);
+
+  async function resolverReporte(reporteId, resultado) {
     setMensaje(null);
-    try {
-      await reputationService.resolverReporte(reporteId, resultado, token);
-      setMensaje(resultado === 'RESENA_RETIRADA' ? 'La reseña fue retirada.' : 'La reseña se mantiene publicada.');
-      recargar();
-    } catch (problema) {
-      setErrorAccion(problema.message);
-    } finally {
-      setResolviendo(null);
-    }
+    await resolver(reporteId, resultado);
+    setMensaje(resultado === 'RESENA_RETIRADA' ? 'La reseña fue retirada.' : 'La reseña se mantiene publicada.');
   }
 
-  function cambiarPestana(valor) {
+  function cambiarFiltro(valor) {
     setMensaje(null);
-    setErrorAccion(null);
-    setEstado(valor);
+    setFiltro(valor);
   }
 
   return (
@@ -108,46 +131,50 @@ function ModeracionPage() {
         <p className={styles.subtitulo}>Revisa cada reporte y decide si la reseña se retira o se mantiene.</p>
       </div>
 
-      <div className={styles.pestanas} role="tablist" aria-label="Estado de los reportes">
-        {PESTANAS.map((pestana) => (
-          <button
-            key={pestana.valor}
+      <div className={styles.filtros}>
+        {FILTROS.map((f) => (
+          <Button
+            key={f.id || 'TODOS'}
             type="button"
-            role="tab"
-            aria-selected={estado === pestana.valor}
-            className={estado === pestana.valor ? `${styles.pestana} ${styles.pestanaActiva}` : styles.pestana}
-            onClick={() => cambiarPestana(pestana.valor)}
+            variant={filtro === f.id ? 'primary' : 'secondary'}
+            onClick={() => cambiarFiltro(f.id)}
           >
-            {pestana.nombre}
-          </button>
+            {f.label}
+          </Button>
         ))}
       </div>
 
       {mensaje && <p role="status" className={styles.mensaje}>{mensaje}</p>}
-      <ErrorMessage error={errorAccion} />
 
-      {error && (
-        <div className={styles.estado}>
-          <ErrorMessage error={error} />
-          <Button variant="secondary" onClick={recargar}>
-            Reintentar
-          </Button>
+      {cargando || error ? (
+        <>
+          <div className="card"><Skeleton lines={3} error={error} /></div>
+          {error && (
+            <div className={styles.estado}>
+              <Button type="button" variant="secondary" onClick={recargar}>
+                Reintentar
+              </Button>
+            </div>
+          )}
+        </>
+      ) : reportes.length === 0 ? (
+        <div className="card">
+          <p>
+            {filtro === 'PENDIENTE'
+              ? 'No hay reportes pendientes. ¡Todo al día!'
+              : filtro === 'RESUELTO'
+                ? 'Aún no hay reportes resueltos.'
+                : 'Aún no hay reportes.'}
+          </p>
         </div>
-      )}
-      {!error && cargando && <p className={styles.estado}>Cargando reportes…</p>}
-      {!error && !cargando && reportes.length === 0 && (
-        <p className={styles.estado}>
-          {estado === 'PENDIENTE' ? 'No hay reportes pendientes. ¡Todo al día!' : 'Aún no hay reportes resueltos.'}
-        </p>
-      )}
-      {!error && !cargando && reportes.length > 0 && (
+      ) : (
         <div className={styles.lista}>
           {reportes.map((reporte) => (
             <TarjetaReporte
               key={reporte.id}
               reporte={reporte}
-              resolviendo={resolviendo === reporte.id}
-              alResolver={resolver}
+              resena={resenas[reporte.codigoResena]}
+              alResolver={resolverReporte}
             />
           ))}
         </div>

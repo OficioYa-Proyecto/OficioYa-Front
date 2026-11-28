@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { dinero, unidad } from '../formatos';
 import * as reputationService from '../services/reputationService';
+import Skeleton from '../../users/components/Skeleton';
 import styles from './DetallesTrabajador.module.css';
 
 const DIAS = {
@@ -106,7 +107,7 @@ export function Cobertura({ cuenta, token }) {
   return (
     <section className={`card ${styles.tarjeta}`}>
       <h2>Cobertura</h2>
-      {localidades === null && <p className={styles.vacio}>Cargando barrios…</p>}
+      {localidades === null && <Skeleton lines={1} />}
       {localidades?.length === 0 && <p className={styles.vacio}>Aún no indica sus barrios.</p>}
       {localidades?.length > 0 && (
         <ul className={styles.localidades}>

@@ -5,6 +5,7 @@ import { useConflictWorkers } from '../hooks/useConflictWorkers';
 import { useRequests } from '../hooks/useRequests';
 import { useUserNames } from '../hooks/useUserNames';
 import { actionsFor } from '../requestActions';
+import Skeleton from '../../users/components/Skeleton';
 import RequestCard from './RequestCard';
 import styles from './RequestsView.module.css';
 
@@ -15,6 +16,12 @@ const PERSON = {
   CONTRATANTE: { label: 'Trabajador', idField: 'workerId' },
   TRABAJADOR: { label: 'Contratante', idField: 'contractorId' },
 };
+
+function titleParts(text) {
+  const words = String(text ?? '').trim().split(/\s+/);
+  const last = words.pop();
+  return { start: words.length > 0 ? `${words.join(' ')} ` : '', last };
+}
 
 const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
 
@@ -97,6 +104,7 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
   const person = PERSON[role];
   const names = useUserNames(requests.map((request) => request[person.idField]));
   const { profiles, zones } = useConflictWorkers(requests);
+  const heading = titleParts(title);
   const conflictRoots = new Set(
     requests.filter((r) => r?.state === 'CONFLICT' && r?.rootId).map((r) => r.rootId),
   );
@@ -155,12 +163,12 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>{eyebrow}</p>
-          <h1>{title}</h1>
+          <h1>{heading.start}<span className={styles.accent}>{heading.last}</span></h1>
           <span className={styles.role}>{ROLE_LABELS[role] ?? role}</span>
         </div>
       </header>
       <ErrorMessage error={error} />
-      {loading && <p>Cargando…</p>}
+      {loading && <div className="card"><Skeleton lines={3} /></div>}
       {!loading && !error && requests.length === 0 && <p className={styles.empty}>{emptyText}</p>}
       {!loading && role === 'CONTRATANTE' && (
         <ConflictGroups

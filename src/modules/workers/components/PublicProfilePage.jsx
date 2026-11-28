@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { resolveGalleryImageUrl } from '../services/imagesClient';
 import EmptyState from './ui/EmptyState';
+import Skeleton from '../../users/components/Skeleton';
 import Icon from './ui/Icon';
 import Button from '../../core/design-system/Button';
 import StatusMessage from './ui/StatusMessage';
@@ -25,7 +26,7 @@ function PublicProfilePage() {
   const photoUrl = useProfilePhoto(profile?.userId);
   const navigate = useNavigate();
 
-  if (loading) return <div className={styles.publicPage}><EmptyState title="Cargando…" text="Estamos consultando el perfil." /></div>;
+  if (loading) return <div className={styles.publicPage}><section className="card"><Skeleton lines={3} /></section></div>;
   if (notFound || profile?.status === 'PAUSED') {
     return (
       <div className={styles.publicPage}>
@@ -84,7 +85,7 @@ function PublicProfilePage() {
                 ))}
               </div>
             ) : (
-              <p className={styles.mutedText}>{localities === null ? 'Cargando…' : 'Sin localidades publicadas.'}</p>
+              localities === null ? <Skeleton lines={1} /> : <p className={styles.mutedText}>Sin localidades publicadas.</p>
             )}
           </section>
           <section className={ui.infoCard}>

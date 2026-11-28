@@ -11,6 +11,7 @@ import { useCuentaTrabajador } from '../hooks/useCuentaTrabajador';
 import { useFotoPerfil } from '../hooks/useFotoPerfil';
 import { useResenasDeContratante } from '../hooks/useResenasDeContratante';
 import { usePerfilTrabajador } from '../hooks/usePerfilTrabajador';
+import Skeleton from '../../users/components/Skeleton';
 import Avatar from './Avatar';
 import AutorResena from './AutorResena';
 import { Cobertura, Contacto, Disponibilidad, OficiosYTarifas, TrabajosRealizados } from './DetallesTrabajador';
@@ -27,7 +28,7 @@ function ResenasComoContratante({ esContratante, estado, nombres, puedeReportar,
     return <p>Este usuario no se encuentra registrado como Contratante en OficioYa.</p>;
   }
   if (estado.cargando) {
-    return <p className={styles.nota}>Cargando reseñas…</p>;
+    return <div className="card"><Skeleton lines={2} /></div>;
   }
   if (estado.error) {
     return <ErrorMessage error={estado.error} />;
@@ -99,7 +100,7 @@ function PerfilTrabajadorPage() {
     );
   }
   if (cargando) {
-    return <p className={styles.estado}>Cargando perfil…</p>;
+    return <section className="card"><Skeleton lines={3} /></section>;
   }
 
   const pausado = reputacion.estado === 'PAUSADO';

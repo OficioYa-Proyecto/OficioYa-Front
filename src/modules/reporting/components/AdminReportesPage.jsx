@@ -36,6 +36,26 @@ function Panel({ estadistica, eyebrow, vacio, children }) {
   );
 }
 
+function EsqueletoReporte() {
+  return (
+    <section className={styles.pagina} aria-busy="true" aria-label="Cargando resumen">
+      <div className={styles.encabezado}>
+        <div className={styles.esqueletoTitulo}>
+          <span className={`${styles.esqueleto} ${styles.esqueletoLinea}`} style={{ width: '30%' }} />
+          <span className={`${styles.esqueleto} ${styles.esqueletoLinea}`} style={{ width: '70%', height: 36 }} />
+          <span className={`${styles.esqueleto} ${styles.esqueletoLinea}`} style={{ width: '55%' }} />
+        </div>
+      </div>
+      <div className={styles.indicadores}>
+        {[0, 1, 2].map((n) => (
+          <span key={n} className={`${styles.esqueleto} ${styles.esqueletoTarjeta}`} />
+        ))}
+      </div>
+      <span className={`${styles.esqueleto} ${styles.esqueletoGrafico}`} />
+    </section>
+  );
+}
+
 function descargar(archivo, nombre) {
   const url = URL.createObjectURL(archivo);
   const enlace = document.createElement('a');
@@ -47,7 +67,7 @@ function descargar(archivo, nombre) {
 
 function AdminReportesPage() {
   const { token } = leerSesion();
-  const { cargando, error, reporte, cambiarRango, reintentar } = useResumen(token);
+  const { cargando, error, reporte, rango, cambiarRango, reintentar } = useResumen(token);
   const [exportando, setExportando] = useState(false);
   const [errorExportar, setErrorExportar] = useState(null);
 
@@ -76,8 +96,11 @@ function AdminReportesPage() {
     );
   }
   if (!reporte) {
-    return <p className={styles.estado}>Cargando resumen…</p>;
+    return <EsqueletoReporte />;
   }
+
+  const desde = rango.desde || reporte.desde;
+  const hasta = rango.hasta || reporte.hasta;
 
   const estadistica = (tipo) => reporte.estadisticas.find((e) => e.tipo === tipo);
   const porDia = estadistica('SERVICIOS_CUMPLIDOS_POR_DIA');
@@ -109,20 +132,20 @@ function AdminReportesPage() {
           Desde
           <input
             id="periodo-desde"
-            max={reporte.hasta}
-            onChange={(e) => e.target.value && cambiarRango({ desde: e.target.value, hasta: reporte.hasta })}
+            max={hasta}
+            onChange={(e) => e.target.value && cambiarRango({ desde: e.target.value, hasta })}
             type="date"
-            value={reporte.desde}
+            value={desde}
           />
         </label>
         <label>
           Hasta
           <input
             id="periodo-hasta"
-            min={reporte.desde}
-            onChange={(e) => e.target.value && cambiarRango({ desde: reporte.desde, hasta: e.target.value })}
+            min={desde}
+            onChange={(e) => e.target.value && cambiarRango({ desde, hasta: e.target.value })}
             type="date"
-            value={reporte.hasta}
+            value={hasta}
           />
         </label>
         <p>

@@ -722,24 +722,23 @@ export default function RegisterPage() {
                     </svg>
                   )}
                 </button>
+                {/* Requisitos pendientes: globo a un lado, solo lo que falta y solo mientras se escribe */}
+                {passwordFocused && missingRules.length > 0 && (
+                  <div className={styles.passHint} role="status" aria-live="polite">
+                    <div className={styles.passHintTitle}>Tu contraseña debe tener:</div>
+                    <ul className={styles.passHintList}>
+                      {missingRules.map((rule) => (
+                        <li key={rule.id}>{rule.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {passwordError && (
                 <span id="password-error" className={styles.fieldError}>
                   {passwordError}
                 </span>
-              )}
-
-              {/* Requisitos pendientes: globo a un lado, solo lo que falta y solo mientras se escribe */}
-              {passwordFocused && missingRules.length > 0 && (
-                <div className={styles.passHint} role="status" aria-live="polite">
-                  <div className={styles.passHintTitle}>Te falta:</div>
-                  <ul className={styles.passHintList}>
-                    {missingRules.map((rule) => (
-                      <li key={rule.id}>{rule.label}</li>
-                    ))}
-                  </ul>
-                </div>
               )}
             </div>
           </div>

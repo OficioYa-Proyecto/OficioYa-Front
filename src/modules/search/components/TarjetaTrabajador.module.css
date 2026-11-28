@@ -61,15 +61,24 @@
 
 .perfil {
   flex: none;
-  padding: 10px 14px;
+  padding: 10px 18px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: 0.9rem;
   font-weight: 700;
   text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .perfil:hover {
-  background: var(--color-surface-alt);
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 8px 18px rgba(36, 49, 45, 0.08);
+}
+
+.perfil:active {
+  transform: translateY(0);
 }

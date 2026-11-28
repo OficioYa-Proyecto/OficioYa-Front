@@ -90,3 +90,46 @@
     grid-template-columns: 1fr;
   }
 }
+
+.esqueletoTitulo {
+  display: grid;
+  gap: 10px;
+  width: min(520px, 100%);
+}
+
+.esqueleto {
+  display: block;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #efe8de 0%, #f8f3ec 50%, #efe8de 100%);
+  background-size: 200% 100%;
+  animation: brillo 1.3s ease-in-out infinite;
+}
+
+.esqueletoLinea {
+  height: 14px;
+}
+
+.esqueletoTarjeta {
+  min-height: 120px;
+  border-radius: 18px;
+}
+
+.esqueletoGrafico {
+  height: 280px;
+  border-radius: 18px;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
