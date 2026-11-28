@@ -48,7 +48,7 @@ function BusquedaPage() {
     <section className={styles.pagina}>
       <div>
         <span className="eyebrow">Encuentra profesionales</span>
-        <h1 className={styles.titulo}>Tu casa, en buenas manos.</h1>
+        <h1 className={styles.titulo}>Tu casa, en buenas <span className={styles.acento}>manos.</span></h1>
       </div>
 
       <form className={styles.buscador} onSubmit={enviar}>

@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import Skeleton from '../../users/components/Skeleton';
 import { useRequests } from '../hooks/useRequests';
 import CalificarServicio from '../../reputation/components/CalificarServicio';
 import RequestsView from './RequestsView';
@@ -19,7 +20,19 @@ function CalificarDesdeEnlace({ solicitudId }) {
     ({ request }) => request.id === solicitudId && request.state === 'COMPLETED',
   );
 
-  if (cargando) return <p className={styles.empty}>Cargando…</p>;
+  if (cargando) {
+    return (
+      <section className={styles.page}>
+        <header className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>Mis solicitudes</p>
+            <h1>Calificar <span className={styles.accent}>servicio</span></h1>
+          </div>
+        </header>
+        <div className="card"><Skeleton lines={3} /></div>
+      </section>
+    );
+  }
 
   if (!encontrada) {
     return (
@@ -37,7 +50,7 @@ function CalificarDesdeEnlace({ solicitudId }) {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Mis solicitudes</p>
-          <h1>Calificar servicio</h1>
+          <h1>Calificar <span className={styles.accent}>servicio</span></h1>
           <span className={styles.role}>{encontrada.role === 'TRABAJADOR' ? 'Trabajador' : 'Contratante'}</span>
         </div>
       </header>
