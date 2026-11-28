@@ -1,0 +1,13 @@
+/* Enlace discreto bajo la etiqueta de estado de cada trabajo. */
+.verPerfil {
+  color: #dc623f;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.verPerfil:hover,
+.verPerfil:focus-visible {
+  text-decoration: underline;
+}

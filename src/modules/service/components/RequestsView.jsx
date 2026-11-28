@@ -99,7 +99,7 @@ function ConflictGroups({ requests, names, person, profiles, zones, onAction, fo
   ));
 }
 
-function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootId }) {
+function RequestsList({ role, eyebrow, title, emptyText, renderExtra, renderAside, focusRootId }) {
   const { requests, loading, error, act } = useRequests(role);
   const person = PERSON[role];
   const names = useUserNames(requests.map((request) => request[person.idField]));
@@ -190,6 +190,7 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
           personLabel={person.label}
           personName={names[request[person.idField]] ?? ''}
           extra={renderExtra ? renderExtra(request) : null}
+          aside={renderAside ? renderAside(request, names[request[person.idField]] ?? '') : null}
         />
       ))}
     </section>
@@ -200,7 +201,8 @@ function RequestsList({ role, eyebrow, title, emptyText, renderExtra, focusRootI
 // El token sale de la sesión del login (httpClient lo envía solo); aquí solo se revisa el rol
 // para decidir qué mostrar: la seguridad real la aplica el back.
 // renderExtra(request) permite a cada página agregar algo a la tarjeta (por ejemplo, calificar).
-function RequestsView({ role, eyebrow, title, emptyText, renderExtra, focusRootId }) {
+// renderAside(request, nombre) agrega algo discreto debajo del estado (por ejemplo, ver el perfil de la otra persona).
+function RequestsView({ role, eyebrow, title, emptyText, renderExtra, renderAside, focusRootId }) {
   const roles = (getSession()?.roles ?? []).map(normalizeRole);
 
   return (
@@ -212,6 +214,7 @@ function RequestsView({ role, eyebrow, title, emptyText, renderExtra, focusRootI
           title={title}
           emptyText={emptyText}
           renderExtra={renderExtra}
+          renderAside={renderAside}
           focusRootId={focusRootId}
         />
       ) : (
