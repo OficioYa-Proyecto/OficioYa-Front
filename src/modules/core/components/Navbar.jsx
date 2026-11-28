@@ -25,6 +25,10 @@ const ICON_PATHS = {
   '/solicitudes': <><rect x="5" y="4" width="14" height="17" rx="2" /><line x1="9" y1="9" x2="15" y2="9" /><line x1="9" y1="13" x2="15" y2="13" /></>,
   '/mis-servicios': <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /></>,
   '/worker': <><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z" /></>,
+  '/admin/reportes': <><rect x="4" y="4" width="16" height="16" rx="2" /><line x1="8.5" y1="16" x2="8.5" y2="12" /><line x1="12" y1="16" x2="12" y2="8" /><line x1="15.5" y1="16" x2="15.5" y2="10.5" /></>,
+  '/admin/moderacion': <><path d="M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6l7-3z" /><polyline points="9 12 11 14 15 10" /></>,
+  '/admin/users': <><circle cx="12" cy="8" r="4" /><path d="M5 20v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" /></>,
+  '/admin/role-requests': <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 13h5l1.5 2.5h5L16 13h5" /></>,
 };
 const DEFAULT_ICON = <circle cx="12" cy="12" r="3" />;
 
@@ -50,6 +54,8 @@ function getFirstName(name) {
   const first = name.trim().split(/\s+/)[0];
   return first || 'Usuario';
 }
+
+const DRAWER_CLOSE_MS = 300;
 
 const normalizeRole = (role) => String(role).toUpperCase().replace('ROLE_', '');
 
@@ -99,11 +105,31 @@ function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerClosing, setDrawerClosing] = useState(false);
   const [drawerUserOpen, setDrawerUserOpen] = useState(false);
+  const drawerCloseTimer = useRef(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifItems, setNotifItems] = useState([]);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
+
+  const openDrawer = useCallback(() => {
+    clearTimeout(drawerCloseTimer.current);
+    setDrawerClosing(false);
+    setDrawerOpen(true);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setDrawerUserOpen(false);
+    setDrawerClosing(true);
+    clearTimeout(drawerCloseTimer.current);
+    drawerCloseTimer.current = setTimeout(() => {
+      setDrawerOpen(false);
+      setDrawerClosing(false);
+    }, DRAWER_CLOSE_MS);
+  }, []);
+
+  useEffect(() => () => clearTimeout(drawerCloseTimer.current), []);
 
   useEffect(() => {
     function syncProfileName() {
@@ -344,14 +370,13 @@ function Navbar() {
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
         setMenuOpen(false);
-        setDrawerOpen(false);
-        setDrawerUserOpen(false);
+        if (drawerOpen && !drawerClosing) closeDrawer();
         setNotifOpen(false);
       }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [closeDrawer, drawerOpen, drawerClosing]);
 
   return (
       <header className={styles.navbar}>
@@ -360,9 +385,9 @@ function Navbar() {
               <button
                   type="button"
                   className={styles.hamburgerBtn}
-                  onClick={() => setDrawerOpen(true)}
+                  onClick={openDrawer}
                   aria-label="Abrir menú de navegación"
-                  aria-expanded={drawerOpen}
+                  aria-expanded={drawerOpen && !drawerClosing}
               >
                 <svg
                     width="24"
@@ -513,12 +538,12 @@ function Navbar() {
         {/* Drawer lateral en pantallas pequeñas */}
         {!isAuthPage && drawerOpen && (
             <div
-                className={styles.drawerBackdrop}
-                onClick={() => { setDrawerOpen(false); setDrawerUserOpen(false); }}
+                className={`${styles.drawerBackdrop} ${drawerClosing ? styles.drawerBackdropClosing : ''}`}
+                onClick={closeDrawer}
                 role="presentation"
             >
               <aside
-                  className={styles.drawer}
+                  className={`${styles.drawer} ${drawerClosing ? styles.drawerClosing : ''}`}
                   onClick={(e) => e.stopPropagation()}
                   aria-label="Menú principal de navegación"
               >
@@ -527,7 +552,7 @@ function Navbar() {
                   <button
                       type="button"
                       className={styles.closeBtn}
-                      onClick={() => { setDrawerOpen(false); setDrawerUserOpen(false); }}
+                      onClick={closeDrawer}
                       aria-label="Cerrar menú"
                   >
                     <svg
@@ -551,7 +576,10 @@ function Navbar() {
                       <NavLink
                           key={link.to}
                           to={link.to}
-                          onClick={() => setDrawerOpen(false)}
+                          onClick={closeDrawer}
+                          onMouseEnter={link.prefetch}
+                          onFocus={link.prefetch}
+                          onTouchStart={link.prefetch}
                           className={({ isActive }) =>
                               isActive
                                   ? `${styles.drawerLink} ${styles.drawerActive}`
@@ -572,8 +600,7 @@ function Navbar() {
                                 type="button"
                                 className={styles.drawerLogout}
                                 onClick={() => {
-                                  setDrawerOpen(false);
-                                  setDrawerUserOpen(false);
+                                  closeDrawer();
                                   handleLogout();
                                 }}
                             >
