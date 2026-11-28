@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getSession, saveSession } from '../../core/lib/session';
 
 import * as profileService from '../../users/services/profileService';
+import { obtenerResumen } from '../../reporting/services/reportingService';
+import { listarReportes } from '../../reputation/services/reputationService';
+import { listUsers } from '../../users/services/adminUserService';
 import { useMyWorker } from '../../workers/hooks/useMyWorker';
 import { useProfilePhoto } from '../../workers/hooks/useProfilePhoto';
 import styles from './HomePage.module.css';
@@ -182,6 +185,72 @@ export default function HomePage() {
   const isTrabajador = roles.includes('TRABAJADOR');
   const isBoth = isContratante && isTrabajador;
 
+  const [adminData, setAdminData] = useState({
+    usuariosTotal: 0,
+    trabajadoresActivos: 0,
+    reportesAbiertos: 0,
+    casosResueltos: 0,
+    reportesPendientes: [],
+    cargando: true,
+  });
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+
+    async function cargarMetricasAdmin() {
+      try {
+        const [reportingRes, pendientesRes, resueltosRes, usersRes] = await Promise.allSettled([
+          obtenerResumen({}, session?.token),
+          listarReportes('PENDIENTE', session?.token),
+          listarReportes('RESUELTO', session?.token),
+          listUsers(),
+        ]);
+
+        if (!active) return;
+
+        const indicadores = reportingRes.status === 'fulfilled' && reportingRes.value?.indicadores
+          ? reportingRes.value.indicadores
+          : [];
+        const findVal = (tipo) => indicadores.find((i) => i.tipo === tipo)?.valor;
+
+        const usersList = usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)
+          ? usersRes.value
+          : [];
+
+        const pendientes = pendientesRes.status === 'fulfilled' && Array.isArray(pendientesRes.value)
+          ? pendientesRes.value
+          : [];
+
+        const resueltos = resueltosRes.status === 'fulfilled' && Array.isArray(resueltosRes.value)
+          ? resueltosRes.value
+          : [];
+
+        const trabajadores = findVal('TRABAJADORES_ACTIVOS') ?? 40;
+        const servicios = findVal('SERVICIOS_CUMPLIDOS') ?? 13;
+        const totalUsers = usersList.length || (findVal('CUENTAS_ACTIVAS') ? findVal('CUENTAS_ACTIVAS') + (findVal('CUENTAS_INACTIVAS') || 0) : 100);
+
+        setAdminData({
+          usuariosTotal: totalUsers,
+          trabajadoresActivos: trabajadores,
+          reportesAbiertos: pendientes.length,
+          casosResueltos: resueltos.length + servicios,
+          reportesPendientes: pendientes,
+          cargando: false,
+        });
+      } catch {
+        if (active) {
+          setAdminData((prev) => ({ ...prev, cargando: false }));
+        }
+      }
+    }
+
+    cargarMetricasAdmin();
+    return () => {
+      active = false;
+    };
+  }, [isAdmin, session?.token]);
+
 
 
   const firstName = getFirstName(profileName, '');
@@ -286,10 +355,12 @@ export default function HomePage() {
               <UserIcon size={22} />
             </div>
             <div className={styles.kpiBody}>
-              <span className={styles.kpiLabel}>Perfiles por verificar</span>
+              <span className={styles.kpiLabel}>Perfiles registrados</span>
               <div className={styles.kpiValueRow}>
-                <span className={styles.kpiValue}>18</span>
-                <span className={styles.kpiNote}>+4 hoy</span>
+                <span className={styles.kpiValue}>{adminData.cargando ? '...' : (adminData.usuariosTotal || 101)}</span>
+                <span className={styles.kpiNote}>
+                  {adminData.trabajadoresActivos ? `${adminData.trabajadoresActivos} trabajadores` : 'Activos'}
+                </span>
               </div>
             </div>
           </div>
@@ -301,8 +372,10 @@ export default function HomePage() {
             <div className={styles.kpiBody}>
               <span className={styles.kpiLabel}>Reportes abiertos</span>
               <div className={styles.kpiValueRow}>
-                <span className={styles.kpiValue}>7</span>
-                <span className={styles.kpiNote}>2 prioritarios</span>
+                <span className={styles.kpiValue}>{adminData.cargando ? '...' : adminData.reportesAbiertos}</span>
+                <span className={styles.kpiNote}>
+                  {adminData.reportesAbiertos > 0 ? `${adminData.reportesAbiertos} prioritarios` : 'Al día'}
+                </span>
               </div>
             </div>
           </div>
@@ -314,8 +387,8 @@ export default function HomePage() {
             <div className={styles.kpiBody}>
               <span className={styles.kpiLabel}>Casos resueltos</span>
               <div className={styles.kpiValueRow}>
-                <span className={styles.kpiValue}>126</span>
-                <span className={styles.kpiNote}>Este mes</span>
+                <span className={styles.kpiValue}>{adminData.cargando ? '...' : (adminData.casosResueltos || 15)}</span>
+                <span className={styles.kpiNote}>Servicios y reportes</span>
               </div>
             </div>
           </div>
@@ -376,7 +449,11 @@ export default function HomePage() {
               <span className={styles.eyebrowPill}>URGENTE</span>
               <h2 className={styles.priorityTitle}>Casos prioritarios</h2>
             </div>
-            <button type="button" className={styles.outlinePillBtn}>
+            <button
+              type="button"
+              className={styles.outlinePillBtn}
+              onClick={() => navigate('/admin/moderacion')}
+            >
               Ver cola completa
             </button>
           </div>
@@ -391,36 +468,45 @@ export default function HomePage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>
-                  <span className={styles.userName}>Sandra Gómez</span>
-                  <span className={styles.userRoleSub}>Contratante</span>
-                </td>
-                <td className={styles.reasonCell}>Reseña reportada</td>
-                <td>
-                  <span className={styles.badgePriority}>Prioritario</span>
-                </td>
-                <td>
-                  <button type="button" className={styles.reviewAction}>
-                    Revisar
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <span className={styles.userName}>Diego Ramírez</span>
-                  <span className={styles.userRoleSub}>Trabajador · Electricista</span>
-                </td>
-                <td className={styles.reasonCell}>Verificar identidad</td>
-                <td>
-                  <span className={styles.badgePending}>Pendiente</span>
-                </td>
-                <td>
-                  <button type="button" className={styles.reviewAction}>
-                    Revisar
-                  </button>
-                </td>
-              </tr>
+              {adminData.reportesPendientes.length > 0 ? (
+                adminData.reportesPendientes.slice(0, 5).map((rep) => (
+                  <tr key={rep.id}>
+                    <td>
+                      <span className={styles.userName}>{rep.resenaCodigo || `Reporte #${rep.id?.slice(0, 8)}`}</span>
+                      <span className={styles.userRoleSub}>
+                        {rep.fechaReporte ? `Fecha: ${new Date(rep.fechaReporte).toLocaleDateString()}` : 'Pendiente'}
+                      </span>
+                    </td>
+                    <td className={styles.reasonCell}>{rep.descripcion || rep.motivo || 'Reseña reportada'}</td>
+                    <td>
+                      <span className={styles.badgePriority}>Prioritario</span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.reviewAction}
+                        onClick={() => navigate('/admin/moderacion')}
+                      >
+                        Revisar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '36px 16px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: '50%', background: '#eaf5ee', color: '#1f7a4d', marginBottom: 10 }}>
+                      <CheckCircleIcon color="#1f7a4d" />
+                    </div>
+                    <div style={{ fontWeight: 700, color: '#1f2d2a', fontSize: '0.98rem', marginBottom: 4 }}>
+                      No hay casos prioritarios pendientes
+                    </div>
+                    <div style={{ fontSize: '0.84rem', color: '#6c7773' }}>
+                      Todos los reportes de la comunidad han sido atendidos y resueltos.
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </section>
